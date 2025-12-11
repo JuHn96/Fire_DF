@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>CCTV 화재 감지 프로젝트 정리</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  margin: 24px;
+  background: #0f172a;
+  color: #e5e7eb;
+  line-height: 1.6;
+}
+h1, h2, h3 {
+  color: #f97316;
+  margin-top: 1.8rem;
+}
+h1 { font-size: 1.8rem; border-bottom: 1px solid #475569; padding-bottom: .3rem; }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.2rem; }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+pre {
+  background: #020617;
+  padding: 12px 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid #1e293b;
+  font-size: 0.85rem;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+th, td {
+  border: 1px solid #334155;
+  padding: 6px 8px;
+}
+th {
+  background: #0f172a;
+}
+hr {
+  border: none;
+  border-top: 1px dashed #334155;
+  margin: 18px 0;
+}
+p {
+  margin: 0.3rem 0;
+}
+</style>
+</head>
+<body>
+
+<h1>🔥 CCTV 화재 감지 프로젝트 전체 기술 정리 + 역할 분담 (MD 버전)</h1>
+<br />
+<hr />
+<br />
+<h1>1. 프로젝트 전체 흐름 구조</h1>
+<br />
+<h2>🔧 시스템 아키텍처 개요</h2>
+<br />
+<pre><code>
+[IP CCTV / 웹캠]
+        ↓ (RTSP / 장치)
+[Python AI 서버]  ← AI 담당 (+ FE 실시간 화면)
+ - OpenCV 캡처
+ - 화재 감지 모델 적용
+ - 감지 박스 그리기
+ - WebSocket으로 프레임 송출
+ - 화재 시 BE로 이벤트 REST 전송
+
+        ↓ (REST)
+[백엔드 API 서버]  ← BE 담당 (+ FE 대시보드/로그/알림)
+ - 이벤트 수신
+ - DB 저장
+ - 로그/통계 API 제공
+
+        ↓ (SQL)
+[DB(MySQL)]        ← DB 담당 (+ FE 설정/관리 화면)
+ - cameras
+ - fire_events
+ - users 등
+
+        ↑
+        └────[프론트엔드(Vue)]────┘  ← FE는 3명 분담
+</code></pre>
+<br />
+<hr />
+<br />
+<h1>2. 실시간 영상(WebSocket) 스트리밍 구조</h1>
+<br />
+<h2>✔ Python → WebSocket → 브라우저</h2>
+<br />
+<h3>Python(WebSocket 서버)</h3>
+<br />
+<pre><code>
+import cv2, asyncio, websockets
+import aiohttp
+
+RTSP_URL = &quot;rtsp://user:pass@192.168.0.50:554/stream&quot;
+
+async def report_event():
+    async with aiohttp.ClientSession() as s:
+        await s.post(&quot;http://backend:8080/api/fire-events&quot;,
+                     json={&quot;camera_id&quot;:1,&quot;level&quot;:&quot;HIGH&quot;,&quot;message&quot;:&quot;화재 감지&quot;})
+
+async def send_frames(ws, path):
+    cap = cv2.VideoCapture(RTSP_URL)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            continue
+
+        # AI 감지 (생략) + 박스 그리기
+        # results, fire_detected = detect_fire(frame)
+
+        _, jpeg = cv2.imencode(&#x27;.jpg&#x27;, frame)
+        await ws.send(jpeg.tobytes())
+
+        # if fire_detected:
+        #     asyncio.create_task(report_event())
+
+start_server = websockets.serve(send_frames, &quot;0.0.0.0&quot;, 8000)
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
+</code></pre>
+<br />
+<h3>Web(Vue) 수신</h3>
+<br />
+<pre><code>
+const ws = new WebSocket(&quot;ws://localhost:8000&quot;);
+ws.binaryType = &quot;arraybuffer&quot;;
+
+ws.onmessage = (msg) =&gt; {
+  const blob = new Blob([msg.data], { type: &quot;image/jpeg&quot; });
+  const url = URL.createObjectURL(blob);
+  document.getElementById(&quot;cam&quot;).src = url;
+};
+</code></pre>
+<br />
+<hr />
+<br />
+<h1>3. 화재 이벤트 처리 흐름</h1>
+<br />
+<h2>✔ 전체 흐름</h2>
+<br />
+<p>1. AI 감지 서버가 화재를 탐지  </p>
+<p>2. BE REST API 호출 (`POST /api/fire-events`)  </p>
+<p>3. BE가 MySQL에 저장  </p>
+<p>4. FE에서 `/api/fire-events` 조회  </p>
+<p>5. FE 대시보드에서 이벤트 팝업/로그/차트 표시  </p>
+<br />
+<h2>✔ DB 스키마 예시</h2>
+<br />
+<h3>cameras</h3>
+<br />
+<pre><code>
+CREATE TABLE cameras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50),
+    rtsp_url VARCHAR(255),
+    location VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+</code></pre>
+<br />
+<h3>fire_events</h3>
+<br />
+<pre><code>
+CREATE TABLE fire_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    camera_id INT NOT NULL,
+    level ENUM(&#x27;LOW&#x27;,&#x27;MID&#x27;,&#x27;HIGH&#x27;) NOT NULL,
+    message VARCHAR(255) NOT NULL,
+    detected_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (camera_id) REFERENCES cameras(id)
+);
+</code></pre>
+<br />
+<hr />
+<br />
+<h1>4. 정규화 / N:M 관계 / 2NF 요약</h1>
+<br />
+<h2>✔ N:M 관계 핵심</h2>
+<br />
+<p>MySQL에서 N:M 관계는 **직접 표현 불가**  </p>
+<p>→ 반드시 **교차테이블**로 1:N + 1:N 구조로 분해해야 함.</p>
+<br />
+<h2>✔ 2NF 위반 예시</h2>
+<br />
+<p>| order_id | product_id | user_id | product_name | product_price |</p>
+<p>|---------|------------|---------|--------------|---------------|</p>
+<br />
+<p>- `user_id` → `order_id`에만 종속  </p>
+<p>- `product_name`, `product_price` → `product_id`에만 종속  </p>
+<p>→ 복합키 일부에만 종속되는 **부분 함수 종속 → 2NF 위반**</p>
+<br />
+<h2>✔ 올바른 구조</h2>
+<br />
+<h3>Order</h3>
+<p>- id  </p>
+<p>- user_id  </p>
+<p>- created_at  </p>
+<br />
+<h3>Product</h3>
+<p>- id  </p>
+<p>- name  </p>
+<p>- price  </p>
+<br />
+<h3>OrderProducts (교차 테이블)</h3>
+<p>- order_id (PK, FK)  </p>
+<p>- product_id (PK, FK)  </p>
+<p>- quantity  </p>
+<p>- price(주문 당시 스냅샷)</p>
+<br />
+<hr />
+<br />
+<h1>5. 비밀번호 해싱(Argon2) 요약</h1>
+<br />
+<p>- 해시는 복호화 불가능한 일방향 변환  </p>
+<p>- 비밀번호는 절대 평문 저장 ❌  </p>
+<p>- Argon2 문자열 길이: **90~120자**, MySQL은 `VARCHAR(255)` 권장</p>
+<br />
+<hr />
+<br />
+<h1>6. 역할별 + FE 분담 상세 정리</h1>
+<br />
+<hr />
+<br />
+<h1>👤 1) AI 담당 + FE(실시간 모니터링 화면)</h1>
+<br />
+<h2>🔹 AI 담당 주요 업무</h2>
+<br />
+<p>-   IP CCTV / 웹캠에서 영상 가져오기</p>
+<p>    -   `cv2.VideoCapture(RTSP_URL 또는 0)` 사용\</p>
+<p>-   화재 감지 모델(예: YOLO) 탑재 및 추론 코드 작성\</p>
+<p>-   프레임 위에 바운딩박스, 라벨(&quot;FIRE&quot;) 오버레이\</p>
+<p>-   WebSocket 서버 구현</p>
+<p>    -   JPEG 바이너리로 계속 전송\</p>
+<p>    -   여러 클라이언트 연결 고려\</p>
+<p>-   화재 발생 시 BE 서버로 REST 호출</p>
+<p>    -   `POST /api/fire-events`</p>
+<br />
+<h2>🔹 AI 담당이 맡을 FE 파트 (실시간 화면)</h2>
+<br />
+<p>-   &quot;실시간 모니터링&quot; 페이지 구현 (Vue)</p>
+<p>    -   WebSocket 연결</p>
+<p>    -   CCTV 화면 + 감지박스 표시</p>
+<p>-   화면 내 상태 표시</p>
+<p>    -   카메라 이름, 위치, 연결 상태(ON/OFF)</p>
+<p>-   감지 시 시각적 강조 UI</p>
+<p>    -   화면 테두리 빨간색 점멸</p>
+<p>    -   &quot;🔥 FIRE DETECTED&quot; 경고 텍스트</p>
+<br />
+<h2>➤ 한 줄 요약</h2>
+<br />
+<p>**&quot;실시간 CCTV + 화재 박스 표시 FE는 AI 담당이 끝까지 책임진다.&quot;**</p>
+<br />
+<hr />
+<br />
+<h1>👤 2) BE 담당(당신) + FE(로그/대시보드/알림)</h1>
+<br />
+<h2>🔹 BE 담당 주요 업무</h2>
+<br />
+<p>-   전체 API 설계</p>
+<p>    -   `POST /api/fire-events` : AI 서버에서 이벤트 수신</p>
+<p>    -   `GET /api/fire-events` : 로그 리스트 + 필터</p>
+<p>    -   `GET /api/stats/fire-events` : 통계 API(일자별/카메라별)</p>
+<p>    -   `GET /api/cameras` : 카메라 목록 조회 API</p>
+<p>    -   (선택) `POST /api/cameras` : 카메라 추가</p>
+<p>-   서비스/도메인 로직</p>
+<p>    -   감지 레벨(LOW/MID/HIGH) 기준 정의</p>
+<p>    -   알림 조건 설정</p>
+<p>-   예외 처리, 인증/인가(필요 시)</p>
+<p>-   Docker 기반 BE 배포 환경 구성</p>
+<br />
+<h2>🔹 BE 담당이 맡을 FE 파트 (로그 &amp; 대시보드 &amp; 알림)</h2>
+<br />
+<p>-   &quot;로그/이벤트 탭&quot; 구현</p>
+<p>    -   fire_events 테이블 기반 목록 표시</p>
+<p>    -   날짜/카메라/레벨 필터 UI</p>
+<p>-   &quot;대시보드/차트 탭&quot; 구현</p>
+<p>    -   일자별 화재 건수 그래프</p>
+<p>    -   카메라별/위치별 통계 시각화</p>
+<p>-   알림 UI</p>
+<p>    -   HIGH 이벤트 발생 시 화면 상단 배너</p>
+<p>    -   우측 사이드 알림 목록</p>
+<p>-   API 연동 예제 코드 제공</p>
+<p>    -   FE 팀원들이 쉽게 호출할 수 있도록 가이드 작성</p>
+<br />
+<h2>➤ 한 줄 요약</h2>
+<br />
+<p>**&quot;데이터·로그·통계·알림 화면은 BE 담당(너)이 FE까지 책임진다.&quot;**</p>
+<br />
+<hr />
+<br />
+<h1>👤 3) DB 담당 + FE(관리/설정 화면)</h1>
+<br />
+<h2>🔹 DB 담당 주요 업무</h2>
+<br />
+<p>-   전체 ERD 설계 보조</p>
+<p>    -   cameras / fire_events / users / roles 등 도메인 구조 확정\</p>
+<p>-   MySQL 테이블 상세 설계 + DDL 작성</p>
+<p>    -   PK/FK, 인덱스 구성\</p>
+<p>    -   2NF / 3NF 정규화 검토\</p>
+<p>-   샘플 데이터 / 시드 데이터 생성\</p>
+<p>-   fire_events 성능 튜닝</p>
+<p>    -   날짜/카메라 기반 조회 인덱스 최적화</p>
+<br />
+<h2>🔹 DB 담당이 맡을 FE 파트 (관리/설정 화면)</h2>
+<br />
+<p>-   카메라 관리 UI (카메라 목록/추가/수정/삭제)</p>
+<p>-   카메라 정보 표시</p>
+<p>    -   이름, RTSP URL, 위치, 사용 여부</p>
+<p>-   사용자/권한 관리 화면(선택)</p>
+<p>-   스키마에 맞는 폼 검증 로직 작성</p>
+<br />
+<h2>➤ 한 줄 요약</h2>
+<br />
+<p>**&quot;카메라 관리·설정·기초 데이터 FE는 DB 담당이 맡는다.&quot;**</p>
+<br />
+<hr />
+<br />
+<h1>\## 2. 팀 전체 FE 분담 규칙 요약</h1>
+<br />
+<p>FE는 &quot;한 명이 전부&quot;가 아니라,\</p>
+<p>**각자 맡은 도메인(AI/BE/DB)에 맞는 FE 화면을 같이 맡는 구조.**</p>
+<br />
+<p>  영역          담당      FE 책임 화면</p>
+<hr />
+<p>  **AI**        AI 담당   실시간 모니터링 화면 (CCTV + 박스 표시)</p>
+<p>  **BE (너)**   BE 담당   로그/대시보드/알림 UI</p>
+<p>  **DB**        DB 담당   카메라 관리 / 설정 / 관리자 화면</p>
+<br />
+<hr />
+<br />
+<h1>7. FE 분담 최종 표</h1>
+<br />
+<p>| FE 화면                | 담당 |</p>
+<p>|------------------------|-------|</p>
+<p>| 실시간 모니터링 화면   | AI   |</p>
+<p>| 로그/이벤트 화면        | BE   |</p>
+<p>| 통계/차트              | BE   |</p>
+<p>| 알림 시스템             | BE   |</p>
+<p>| 카메라 관리            | DB   |</p>
+<p>| 설정/관리자 페이지      | DB   |</p>
+<br />
+<hr />
+</body></html>
