@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>운영 및 배포 개념 정리</title>
+  <style>
+    /* 2-C 공통 스타일 시작 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+    }
+
+    ul {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    ol {
+      padding-left: 20px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    pre {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 12px;
+      margin-bottom: 12px;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      border: 1px solid #111827;
+    }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* 2-C 공통 스타일 끝 */
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>운영 및 배포 개념 정리</h1>
+    </header>
+
+    <div class="section">
+      <h2>0. 이 장에서 다루는 범위</h2>
+      <p>
+        이 장은 본 프로젝트를 <strong>실제 환경에서 실행·운영</strong>하기 위한
+        기본 개념을 정리한 챕터입니다. 소스코드 레벨이 아니라,
+        <strong>Docker / Docker Compose</strong>를 활용해
+        AI 서버, 백엔드, DB, 프론트엔드, Nginx 등을
+        하나의 세트로 올리고 관리하는 관점에서 설명합니다.
+      </p>
+
+      <ul>
+        <li>Docker / Docker Compose 기본 구조</li>
+        <li>로컬 개발 환경 실행 방법 개념</li>
+        <li>테스트/운영 환경으로 확장하는 방식</li>
+        <li>환경변수(.env) 관리 개념</li>
+        <li>로그, 모니터링, 백업·복구 개념</li>
+        <li>운영시 체크해야 할 항목들</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>1. 전체 실행 시나리오 개요</h2>
+      <p>운영·배포 관점에서 시스템을 실행하는 큰 흐름은 다음과 같습니다.</p>
+      <ol>
+        <li>서버(또는 개발 PC)에 Docker와 Docker Compose를 설치한다.</li>
+        <li>프로젝트 루트에 놓인 <code>docker-compose.yml</code>과 <code>.env</code>를 준비한다.</li>
+        <li><code>docker-compose up -d</code> 명령 한 번으로
+          AI / BE / DB / FE / Nginx 컨테이너가 일괄 기동된다.</li>
+        <li>브라우저에서 지정된 주소(예: <code>http://localhost:8080</code>)로 접속해
+          관리자 대시보드에 접근한다.</li>
+        <li>실제 CCTV RTSP 주소를 등록해 AI 서버가 영상을 받아 화재 감지를 수행한다.</li>
+        <li>운영 중에는 컨테이너 상태와 로그를 모니터링하며,
+          필요 시 재시작/스케일 조정/백업 등을 수행한다.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>2. Docker Compose 기반 서비스 구성 개념</h2>
+      <p>실제 <code>docker-compose.yml</code> 파일 내용은 별도 산출물(4번)에서 다루고,
+         여기서는 어떤 서비스가 어떤 역할을 하는지 개념만 설명합니다.</p>
+
+      <h3>2-1. 주요 서비스 목록</h3>
+      <ul>
+        <li><strong>ai-server</strong>
+          <ul>
+            <li>역할: RTSP 스트림 수신, 화재 감지 모델 실행, BE에 이벤트 전송</li>
+            <li>포트: 외부에 직접 노출하지 않고 내부 네트워크에서만 동작해도 됨</li>
+          </ul>
+        </li>
+        <li><strong>backend-api</strong>
+          <ul>
+            <li>역할: FastAPI 기반 REST API, 비즈니스 로직, DB 접근</li>
+            <li>포트 예시: 내부 8000, Nginx가 이 포트로 프록시</li>
+          </ul>
+        </li>
+        <li><strong>backend-ws</strong> (또는 backend-api와 통합)
+          <ul>
+            <li>역할: WebSocket 연결 담당, 실시간 이벤트 푸시</li>
+            <li>포트 예시: 내부 8001, Nginx가 <code>/ws</code>로 프록시</li>
+          </ul>
+        </li>
+        <li><strong>db (mysql)</strong>
+          <ul>
+            <li>역할: MySQL 데이터베이스</li>
+            <li>포트 예시: 내부 3306, 필요 시만 호스트에 노출</li>
+            <li>데이터는 <strong>호스트 볼륨</strong>을 사용해 컨테이너 재시작에도 유지</li>
+          </ul>
+        </li>
+        <li><strong>frontend (nginx)</strong>
+          <ul>
+            <li>역할: 빌드된 Vue 앱 정적 파일 서비스 + 리버스 프록시 역할</li>
+            <li>포트 예시: 호스트 8080 → Nginx 80 포트 매핑</li>
+            <li><code>/</code>는 FE, <code>/api</code>는 backend-api, <code>/ws</code>는 backend-ws에 프록시</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>2-2. 내부 네트워크 개념</h3>
+      <ul>
+        <li>모든 컨테이너는 Docker Compose가 생성한
+          <strong>공용 브리지 네트워크</strong>에 속합니다.</li>
+        <li>컨테이너끼리는 서비스 이름으로 통신합니다.
+          <br>예) backend-api에서 DB 접속 시:
+          <code>mysql://db:3306/...</code></li>
+        <li>외부에서 직접 접근해야 하는 것은 보통
+          <strong>Nginx(frontend)의 포트 하나</strong>만 노출하는 구조를 권장합니다.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. 환경변수 및 설정 관리 개념</h2>
+      <p>운영/테스트/개발 환경마다 DB 비밀번호, 카카오 키, 도메인 등이 다를 수 있기 때문에
+         <strong>.env 파일을 사용해 민감한 값을 분리</strong>하는 방식을 사용합니다.</p>
+
+      <h3>3-1. .env 파일 예시 개념</h3>
+      <ul>
+        <li>DB 관련
+          <ul>
+            <li><code>MYSQL_ROOT_PASSWORD=...</code></li>
+            <li><code>MYSQL_DATABASE=fire_project</code></li>
+            <li><code>MYSQL_USER=fire_user</code></li>
+            <li><code>MYSQL_PASSWORD=...</code></li>
+          </ul>
+        </li>
+        <li>백엔드 관련
+          <ul>
+            <li><code>BACKEND_LOG_LEVEL=info</code></li>
+            <li><code>BACKEND_ALLOWED_ORIGINS=http://localhost:8080</code></li>
+          </ul>
+        </li>
+        <li>카카오 관련
+          <ul>
+            <li><code>KAKAO_API_KEY=...</code></li>
+            <li><code>KAKAO_SENDER_KEY=...</code></li>
+            <li><code>KAKAO_TEMPLATE_ID_FIRE_LEVEL2=...</code></li>
+          </ul>
+        </li>
+      </ul>
+
+      <p>
+        <code>docker-compose.yml</code>에서는 이러한 값들을
+        <code>${환경변수명}</code> 형태로 참조하여,
+        코드 수정 없이 환경만 바꿔서 운영할 수 있도록 설계합니다.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>4. 로컬 개발 환경 실행 개념</h2>
+      <p>개발자가 자신의 PC(또는 팀 개발 서버)에서 시스템을 전체로 띄워보는 기본 절차입니다.</p>
+
+      <ol>
+        <li>Git 저장소에서 프로젝트를 클론한다.</li>
+        <li>루트 디렉터리에 제공된 <code>.env.example</code>를 복사해
+          <code>.env</code> 파일을 만든 뒤, 본인 환경에 맞게 값만 수정한다.</li>
+        <li>필요하다면, AI 서버에서 사용할 테스트용 RTSP 주소(동영상 파일 또는 테스트 카메라)를 세팅한다.</li>
+        <li>터미널에서 프로젝트 루트로 이동 후:
+          <br><code>docker-compose up -d</code> 명령을 실행한다.</li>
+        <li>잠시 후 브라우저에서
+          <code>http://localhost:8080</code>으로 접속해
+          관리자 대시보드에 접근한다.</li>
+        <li>CCTV 관리 탭에서 테스트용 카메라를 등록하고,
+          이벤트가 정상적으로 발생·표시·로그 저장·카카오 발송(테스트용)이 되는지 확인한다.</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>5. 테스트/운영 환경 배포 개념</h2>
+      <p>
+        테스트/운영 환경에서는 로컬과 거의 동일한 구성을 사용하되,
+        <strong>RTSP 주소, 도메인, 보안 설정</strong>만 실제 환경에 맞춰 바꾸는 것을 목표로 합니다.
+      </p>
+
+      <h3>5-1. 공통 원칙</h3>
+      <ul>
+        <li>가능하면 개발/테스트/운영 모두
+          <strong>동일한 Docker Compose 구조</strong>를 사용합니다.</li>
+        <li>환경마다 다른 값은 .env 파일 또는
+          별도의 환경 변수로 분리합니다.</li>
+        <li>운영 환경에서는 DB, 로그, 이미지 저장소에 대해
+          <strong>백업/보안 정책</strong>을 반드시 함께 설계합니다.</li>
+      </ul>
+
+      <h3>5-2. 테스트 환경</h3>
+      <ul>
+        <li>실제 CCTV 일부 또는 테스트용 카메라를 연결해,
+          운영 전 전체 플로우를 검증하는 환경입니다.</li>
+        <li>카카오 발송은 실제 대신
+          <strong>테스트 발송 모드</strong>를 사용하거나,
+          제한된 수신자에게만 보내도록 설정합니다.</li>
+        <li>성능, 지연시간, 오탐율 등을 이 환경에서 먼저 점검합니다.</li>
+      </ul>
+
+      <h3>5-3. 운영 환경</h3>
+      <ul>
+        <li>실제 건물/시설의 CCTV RTSP 주소들이 등록되는 환경입니다.</li>
+        <li>외부 접근은 보통
+          <strong>Nginx(frontend)의 80/443 포트</strong>만 열고,
+          나머지 컨테이너는 내부 네트워크에서만 접근 가능하게 합니다.</li>
+        <li>SSL(HTTPS), 방화벽, VPN 등
+          보안 요소를 함께 고려해야 합니다.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. 로그 및 모니터링 개념</h2>
+      <p>운영 환경에서는 “잘 돌아가는지”, “문제는 없는지”를 관찰할 수 있어야 합니다.</p>
+
+      <h3>6-1. 기본 로그 전략</h3>
+      <ul>
+        <li>각 컨테이너의 표준 출력 로그는
+          <code>docker logs</code>로 조회 가능합니다.</li>
+        <li>백엔드 로그에는 최소한 다음 정보가 포함되도록 설계합니다.
+          <ul>
+            <li>AI 이벤트 수신 시각, 카메라 ID, 결과</li>
+            <li>DB 저장 성공/실패 정보</li>
+            <li>카카오 발송 요청/결과</li>
+            <li>WebSocket 브로드캐스트 수행 여부</li>
+          </ul>
+        </li>
+        <li>필요하다면, 장기적으로는 ELK(Elasticsearch/Logstash/Kibana) 등
+          로그 수집 시스템으로 확장할 수 있습니다.</li>
+      </ul>
+
+      <h3>6-2. 헬스 체크</h3>
+      <ul>
+        <li>각 컨테이너에는 헬스 체크 엔드포인트를 준비하는 것이 좋습니다.
+          <ul>
+            <li>backend-api: <code>GET /health</code></li>
+            <li>ai-server: 내부 상태 점검용 엔드포인트 또는 자체 로그</li>
+            <li>db: DB 연결 가능 여부</li>
+          </ul>
+        </li>
+        <li>운영 도중 주기적으로 헬스 체크를 수행해,
+          이상 시 알림을 받을 수 있도록 확장할 수 있습니다.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>7. 데이터 백업 및 복구 개념</h2>
+      <p>화재 이벤트 로그와 CCTV 정보는 사고 분석에 중요한 데이터입니다.
+         최소한 다음 항목들에 대한 백업 정책이 필요합니다.</p>
+
+      <ul>
+        <li><strong>MySQL DB 백업</strong>
+          <ul>
+            <li>정기적인 덤프(예: 하루 1회 <code>mysqldump</code>)를 수행합니다.</li>
+            <li>백업 파일은 다른 디스크 또는 외부 스토리지에 보관합니다.</li>
+          </ul>
+        </li>
+        <li><strong>이벤트 이미지 파일</strong>
+          <ul>
+            <li>이벤트 캡처 이미지는 용량이 커질 수 있으므로,
+              보존 기간 정책(예: 3개월, 6개월)을 정합니다.</li>
+            <li>오래된 이미지는 별도 아카이브로 이동하거나 삭제할 수 있습니다.</li>
+          </ul>
+        </li>
+      </ul>
+
+      <p>
+        복구 시에는 DB 덤프를 복원하고, 이미지 스토리지를 동일 경로에 복원함으로써
+        기존 이벤트 로그를 다시 조회할 수 있도록 합니다.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>8. 운영 체크리스트 개념</h2>
+      <p>실제 운영 전/후로 점검해야 할 항목을 개념적으로 정리하면 다음과 같습니다.</p>
+
+      <h3>8-1. 사전 점검</h3>
+      <ul>
+        <li>모든 CCTV RTSP 주소가 정상적으로 스트림을 제공하는지</li>
+        <li>AI 서버가 각 스트림에 정상 접속하는지</li>
+        <li>DB, 백엔드, 프론트엔드가 오류 없이 기동되는지</li>
+        <li>테스트 모드에서 이벤트 감지 → 알림 → 로그 저장이 전체 플로우대로 동작하는지</li>
+      </ul>
+
+      <h3>8-2. 운영 중 점검</h3>
+      <ul>
+        <li>컨테이너 CPU/메모리 사용량이 과도하지 않은지</li>
+        <li>이벤트가 지나치게 자주 발생(오탐)하지는 않는지</li>
+        <li>카카오 알림 실패율이 비정상적으로 높지 않은지</li>
+        <li>DB 용량과 이미지 저장소 용량이 충분한지</li>
+      </ul>
+
+      <h3>8-3. 장애 발생 시 기본 대응</h3>
+      <ul>
+        <li>특정 컨테이너 다운 시:
+          <ul>
+            <li><code>docker logs</code>로 원인 확인</li>
+            <li>필요 시 <code>docker-compose restart 서비스명</code>으로 재시작</li>
+          </ul>
+        </li>
+        <li>전체 시스템 이상 시:
+          <ul>
+            <li>우선 DB와 이미지 데이터가 안전한지 확인</li>
+            <li>그 다음 개별 컨테이너를 순차적으로 재기동</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>9. 요약</h2>
+      <p>
+        이 장에서는 본 프로젝트를 Docker / Docker Compose 기반으로
+        <strong>어떻게 실행하고 운영할 것인지</strong>에 대한 큰 틀을 정리했습니다.
+        실제 <code>docker-compose.yml</code> 파일과 구체 설정은
+        별도 산출물(Docker Compose)에서 스펙으로 정의하고,
+        이 문서는 그 설정이 <strong>어떤 의도와 구조를 가지고 있는지 설명하는 운영 가이드</strong> 역할을 합니다.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>전체 아키텍처 PNG 설명</title>
+  <style>
+    /* 2-C 공통 스타일 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #e0f2fe, #bfdbfe, #818cf8);
+    }
+
+    p {
+      margin-top: 4px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    ul, ol {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    /* 코드 / 출력 예시 공통 스타일 */
+
+    pre {
+      margin: 10px 0 12px;
+      padding: 12px 14px;
+      background-color: #020617;
+      color: #e5e7eb;
+      border-radius: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-x: auto;
+      border: 1px solid #111827;
+      white-space: pre;
+    }
+
+    /* 🔥 pre 안쪽 code는 캡슐 배경 제거 */
+    pre code {
+      font-family: inherit;
+      white-space: inherit;
+      background: transparent !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1>전체 아키텍처 PNG 설명</h1>
+      <p>
+        이 문서는 나중에 실제 PNG 다이어그램을 제작하기 위한
+        <strong>정확한 구성 요소 + 연결 관계</strong>를 정의하는 설명입니다.
+        이 설명을 기반으로 Figma / PPT / PNG 어떤 방식으로든 그림을 쉽게 만들 수 있습니다.
+      </p>
+    </header>
+
+    <div class="section">
+      <h2>1. 전체 아키텍처의 큰 구조</h2>
+      <p>전체 시스템은 <strong>6개의 레이어(층)</strong>로 구성된다:</p>
+      <ol>
+        <li>현장 레이어 (CCTV/NVR)</li>
+        <li>AI 분석 레이어</li>
+        <li>백엔드 API 레이어</li>
+        <li>WebSocket 실시간 알림 레이어</li>
+        <li>데이터 레이어(DB + 이미지 저장소)</li>
+        <li>프론트엔드(대시보드) + Nginx 레이어</li>
+      </ol>
+      <p>각 레이어는 서로 다음과 같은 순서대로 데이터를 전달한다:</p>
+      <p><strong>CCTV → AI → BE(API) → DB / WebSocket → FE → 사용자</strong></p>
+    </div>
+
+    <div class="section">
+      <h2>2. 구성 요소 상세</h2>
+
+      <h3>2-1. 현장 레이어 (CCTV / NVR)</h3>
+      <ul>
+        <li>기존 건물에 설치된 CCTV 장치</li>
+        <li>각 카메라에서 <strong>RTSP 스트림</strong>을 제공</li>
+        <li>본 시스템은 새 장비를 설치하지 않고, 기존 영상만 끌어와 활용함</li>
+      </ul>
+      <p>출력: <code>rtsp://...</code> 형태 스트림 주소</p>
+    </div>
+
+    <div class="section">
+      <h3>2-2. AI 분석 레이어 (ai-server)</h3>
+      <ul>
+        <li>RTSP 스트림을 받아 영상 프레임 처리</li>
+        <li>화재 감지 모델(YOLO 기반)을 적용</li>
+        <li>신뢰도 &amp; 시간 조건 충족 시 “화재 이벤트” 발생</li>
+        <li>발생한 이벤트를 <strong>백엔드 API로 POST 전송</strong></li>
+      </ul>
+      <p>출력 예:</p>
+      <pre><code>{
+  "camera_id": "CCTV-001",
+  "confidence": 0.87,
+  "event_time": "2025-12-12T10:22:21",
+  "image_path": "/events/2025-12-12/cctv001_102221.jpg",
+  "level": 2
+}</code></pre>
+    </div>
+
+    <div class="section">
+      <h3>2-3. 백엔드 API 레이어 (FastAPI)</h3>
+      <ul>
+        <li>AI 서버에서 보낸 화재 이벤트를 수신</li>
+        <li>비즈니스 로직을 적용하여
+          <ul>
+            <li>중복 여부</li>
+            <li>단계(level)</li>
+            <li>상태(발생/해제)</li>
+          </ul>
+          를 판단
+        </li>
+        <li>MySQL에 이벤트 로그 저장</li>
+        <li>카카오 발송 여부 결정 후 카카오 모듈 호출</li>
+      </ul>
+      <p>핵심 API:</p>
+      <ul>
+        <li><code>POST /internal/events/fire</code></li>
+        <li><code>GET /api/events</code></li>
+        <li><code>GET /api/cctvs</code></li>
+        <li><code>POST /api/kakao/send</code></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>2-4. WebSocket 실시간 알림 레이어</h3>
+      <p>백엔드와 분리된 <strong>실시간 전송 전용 서버</strong> 또는 백엔드 내부에서 <code>/ws</code> 엔드포인트로 운영.</p>
+      <p>역할:</p>
+      <ul>
+        <li>새 화재 이벤트 발생 시 FE에 즉시 PUSH</li>
+        <li>단계 변경(level up) 시 알림 전송</li>
+        <li>이벤트 해제 시 대시보드에서 해당 카드 상태 업데이트</li>
+      </ul>
+      <p>WebSocket 메시지 예:</p>
+      <pre><code>{
+  "type": "fire_event",
+  "camera_id": "CCTV-001",
+  "level": 2,
+  "status": "active"
+}</code></pre>
+    </div>
+
+    <div class="section">
+      <h3>2-5. 데이터 레이어 (MySQL + 이미지 저장소)</h3>
+      <p><strong>MySQL DB</strong></p>
+      <ul>
+        <li>CCTV 정보</li>
+        <li>이벤트 로그</li>
+        <li>카카오 발송 결과</li>
+        <li>템플릿 설정</li>
+      </ul>
+
+      <p><strong>이미지 저장소</strong></p>
+      <ul>
+        <li>AI가 캡처·분석한 화재 이미지 저장</li>
+        <li>DB에는 이미지 URL/경로만 저장</li>
+      </ul>
+
+      <p>구조:</p>
+      <pre><code>DB
+ ├─ cctv
+ ├─ events
+ ├─ kakao_logs
+ └─ templates
+
+Storage
+ └─ /events/2025-12-12/...jpg</code></pre>
+    </div>
+
+    <div class="section">
+      <h3>2-6. 프론트엔드 + Nginx 레이어</h3>
+      <p><strong>Vue 기반 관리자 대시보드</strong></p>
+      <ul>
+        <li>메인 대시보드</li>
+        <li>서브 대시보드</li>
+        <li>로그 &amp; 통계</li>
+        <li>CCTV 관리</li>
+        <li>마이페이지</li>
+      </ul>
+
+      <p><strong>Nginx 역할</strong></p>
+      <ol>
+        <li>Vue 정적 파일 제공(<code>/</code>)</li>
+        <li><code>/api</code> 요청은 백엔드로 Reverse Proxy</li>
+        <li><code>/ws</code> 요청은 WebSocket 서버로 Proxy</li>
+        <li>운영 환경에서는 HTTPS 적용 위치</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>3. 레이어 간 데이터 흐름(Flow)</h2>
+
+      <h3>1) CCTV → AI</h3>
+      <ul>
+        <li>RTSP 스트림 전달</li>
+      </ul>
+
+      <h3>2) AI → 백엔드 API</h3>
+      <ul>
+        <li>이벤트 발생 시 POST 전송</li>
+        <li>이미지 파일 생성 후 경로 전달</li>
+      </ul>
+
+      <h3>3) 백엔드 API → DB</h3>
+      <ul>
+        <li>이벤트 로그 저장</li>
+        <li>단계/상태 업데이트</li>
+      </ul>
+
+      <h3>4) 백엔드 API → 카카오</h3>
+      <ul>
+        <li>발송 조건 충족 시 템플릿 바인딩 후 전송</li>
+      </ul>
+
+      <h3>5) 백엔드 API → WebSocket</h3>
+      <ul>
+        <li>실시간 대시보드 업데이트 위한 알림 Push</li>
+      </ul>
+
+      <h3>6) WebSocket → 프론트엔드</h3>
+      <ul>
+        <li>UI 즉시 반영 (카드 빨간색 점멸 등)</li>
+      </ul>
+
+      <h3>7) 사용자</h3>
+      <ul>
+        <li>대시보드에서 실시간 감지 확인</li>
+        <li>카카오톡 알림 수신</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>4. 실제 PNG에서 표현될 구성(요약)</h2>
+      <p>PNG는 아래 형태의 구조를 시각화하게 될 것:</p>
+      <pre><code>[CCTV] → (RTSP)
+    ↓
+[AI Server]
+   | fire_event
+   ↓
+[Backend API] → [DB]
+       |           ↑
+       |           |
+       → [WebSocket] → [Frontend(Vue)] → 사용자
+       → [Kakao API]</code></pre>
+
+      <p>구성 요소는 다음 박스로 정리됨:</p>
+      <ul>
+        <li>CCTV / RTSP</li>
+        <li>AI Server</li>
+        <li>Backend API</li>
+        <li>WebSocket Server</li>
+        <li>MySQL DB</li>
+        <li>Image Storage</li>
+        <li>Nginx + Frontend(Vue)</li>
+        <li>Kakao</li>
+      </ul>
+
+      <p>연결선은:</p>
+      <ul>
+        <li>RTSP 스트림</li>
+        <li>HTTP POST</li>
+        <li>DB Connection</li>
+        <li>WebSocket</li>
+        <li>Reverse Proxy</li>
+        <li>Kakao API</li>
+      </ul>
+
+      <p>이렇게 표현되면 깔끔한 아키텍처 PNG를 만들 수 있다.</p>
+    </div>
+
+    <div class="section">
+      <h2>5. PNG 제작 시 권장 스타일(참고)</h2>
+      <p>(이 부분은 그림 만들 때 참고만 하면 됨)</p>
+      <ul>
+        <li>카테고리별 박스를 색상 분리
+          <ul>
+            <li>AI = 주황</li>
+            <li>BE = 파랑</li>
+            <li>FE = 초록</li>
+            <li>DB = 회색</li>
+          </ul>
+        </li>
+        <li>데이터 흐름은 → 화살표로 일관되게</li>
+        <li>단방향, 양방향을 선 굵기/색으로 구분</li>
+      </ul>
+
+      <p>이렇게 구성하면 Figma, PPT, PNG 어디에서든 동일한 구조로 아키텍처 다이어그램을 제작할 수 있다.</p>
+    </div>
+
+  </div>
+</body>
+</html>

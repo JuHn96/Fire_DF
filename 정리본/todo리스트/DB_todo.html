@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>DB 담당 할 일 리스트 (MySQL / 스키마 설계 / ERD / 백업)</title>
+
+  <style>
+    /* --------------------------------
+       전체 레이아웃 & 배경
+    --------------------------------- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      background-color: #e5e7eb;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* --------------------------------
+       헤더
+    --------------------------------- */
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: #111827;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    .tagline {
+      font-size: 14px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    .meta-row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .meta-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background-color: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      color: #6d28d9;
+      font-weight: 500;
+    }
+
+    /* --------------------------------
+       섹션
+    --------------------------------- */
+    .section {
+      margin-bottom: 18px;
+      padding: 18px 18px 16px 18px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+    }
+
+    /* --------------------------------
+       섹션 타이틀 그룹
+       Violet Pastel Gradient 컬러바
+    --------------------------------- */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .section-bar {
+      width: 5px;
+      height: 34px;
+      border-radius: 6px;
+      background: linear-gradient(
+        to bottom,
+        #ede9fe,   /* 파스텔 연보라 */
+        #c4b5fd,   /* 연한 라벤더 */
+        #818cf8    /* 파스텔 인디고 */
+      );
+      flex-shrink: 0;
+    }
+
+    .section-heading-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .section-index-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 650;
+      color: #111827;
+      letter-spacing: 0.01em;
+    }
+
+    /* --------------------------------
+       리스트
+    --------------------------------- */
+    ul {
+      margin: 6px 0 2px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    /* --------------------------------
+       인라인 코드
+    --------------------------------- */
+    .code-inline {
+      font-family: SFMono-Regular, Menlo, Monaco, monospace;
+      font-size: 12px;
+      background-color: #f3f4ff;
+      color: #4338ca;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #c7d2fe;
+      white-space: nowrap;
+    }
+
+    /* --------------------------------
+       반응형
+    --------------------------------- */
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1>DB 담당 할 일 리스트</h1>
+      <p class="tagline">
+        MySQL 기반 CCTV·이벤트·이미지·사용자 스키마 설계부터 정규화, 인덱싱, 초기 데이터, 백업 전략까지 포함한 실제 작업용 To-do 목록입니다.
+      </p>
+
+      <div class="meta-row">
+        <span class="meta-pill">Database · MySQL</span>
+        <span class="meta-pill">Schema · ERD</span>
+        <span class="meta-pill">정규화 · 인덱스</span>
+        <span class="meta-pill">Docker · Init SQL</span>
+        <span class="meta-pill">백업 · DR 고려</span>
+      </div>
+    </header>
+
+    <!-- 01: 환경 & 컨테이너 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">01</div>
+          <div class="section-title">MySQL 환경 & 컨테이너 세팅</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 사용할 MySQL 버전 확정 (예: 8.x)</li>
+        <li>[ ] Docker 기반 MySQL 컨테이너 기동 (포트, 볼륨, 환경변수 설정)</li>
+        <li>[ ] 기본 DB 스키마 이름 정의 (예: <span class="code-inline">fire_monitoring</span>)</li>
+        <li>[ ] 문자셋/Collation 정책 결정 (예: <span class="code-inline">utf8mb4</span>)</li>
+        <li>[ ] 팀원이 접속할 계정/권한 기본 정책 정리</li>
+      </ul>
+    </section>
+
+    <!-- 02: 요구사항 정리 & 엔터티 식별 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">02</div>
+          <div class="section-title">요구사항 정리 & 주요 엔터티 식별</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 시스템에서 관리해야 할 핵심 데이터 목록화
+          <br />예: CCTV, 이벤트(화재 감지 기록), 이미지(스크린샷), 사용자, 그룹/지역 등
+        </li>
+        <li>[ ] 각 엔터티별 필수 속성(컬럼) 초안 작성</li>
+        <li>[ ] BE/AI/FE 담당과 협의하여 엔터티 목록 확정</li>
+        <li>[ ] PK, 자연키/대체키 후보 식별</li>
+      </ul>
+    </section>
+
+    <!-- 03: 스키마 설계 & 테이블 정의 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">03</div>
+          <div class="section-title">스키마 설계 & 주요 테이블 정의</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] CCTV 테이블 설계 (카메라 ID, 이름, 그룹, RTSP URL, 메인 여부 등)</li>
+        <li>[ ] 이벤트 로그 테이블 설계 (이벤트 ID, 카메라 ID, 발생 시각, 단계, 위험도, 상태 등)</li>
+        <li>[ ] 감지 이미지/스크린샷 테이블 설계 (이미지 ID, 이벤트 ID, 파일 경로/해시, 저장 시각 등)</li>
+        <li>[ ] 사용자 테이블 설계 (로그인 관련 여부는 프로젝트 범위에 맞춰 최소 필드만)</li>
+        <li>[ ] 필요 시 그룹/지역/빌딩 등 관리용 보조 테이블 정의</li>
+      </ul>
+    </section>
+
+    <!-- 04: 정규화 & 관계 설정 (2NF / N:M) -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">04</div>
+          <div class="section-title">정규화 & 관계 설정 (2NF, N:M, 해싱 설계)</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 각 테이블에 대해 1NF → 2NF 정규화 수준 검토</li>
+        <li>[ ] 중복 데이터/중복 컬럼 제거 및 별도 테이블 분리 여부 판단</li>
+        <li>[ ] N:M 관계가 필요한 경우 중간 매핑 테이블 설계</li>
+        <li>[ ] 이미지/파일 경로에 대한 해싱 전략 정리 (파일명/디렉터리 구조 정책)</li>
+        <li>[ ] ON DELETE / ON UPDATE 제약 조건(외래키 정책) 정의</li>
+      </ul>
+    </section>
+
+    <!-- 05: 인덱스 & 성능 고려 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">05</div>
+          <div class="section-title">인덱스 전략 & 조회 성능 고려</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 이벤트 조회에 자주 사용될 컬럼 파악 (시간 범위, 카메라 ID, 단계 등)</li>
+        <li>[ ] 해당 컬럼들에 대한 인덱스 설계 (단일/복합 인덱스)</li>
+        <li>[ ] CCTV 테이블에서 자주 필터링되는 컬럼(그룹, 메인 여부)에 대한 인덱스 검토</li>
+        <li>[ ] 데이터 증가를 고려한 파티셔닝/아카이빙 전략까지 기본 아이디어 정리 (선택)</li>
+      </ul>
+    </section>
+
+    <!-- 06: 초기 스키마 스크립트 & 샘플 데이터 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">06</div>
+          <div class="section-title">초기 스키마 스크립트 & 샘플 데이터 구성</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] <span class="code-inline">CREATE TABLE</span> 스크립트 정리 (DDL)</li>
+        <li>[ ] 팀원이 바로 테스트할 수 있도록 기본 CCTV/사용자 샘플 데이터 INSERT 스크립트 작성</li>
+        <li>[ ] 이벤트/이미지 샘플 데이터 몇 건 추가 (FE/BE 화면 개발용)</li>
+        <li>[ ] <span class="code-inline">init.sql</span> 또는 <span class="code-inline">docker-entrypoint</span>용 초기화 스크립트로 묶기</li>
+        <li>[ ] 스키마 변경 시 버전 관리 방법(파일명, 폴더 구조) 규칙 정하기</li>
+      </ul>
+    </section>
+
+    <!-- 07: Docker Compose 연동 & 접속 정보 공유 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">07</div>
+          <div class="section-title">Docker Compose 연동 & 접속 정보 정리</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] <span class="code-inline">docker-compose.yml</span> 내 MySQL 서비스 정의 (포트, 볼륨, 환경 변수)</li>
+        <li>[ ] DB 이름, 사용자, 비밀번호를 <span class="code-inline">.env</span> 또는 별도 설정으로 분리</li>
+        <li>[ ] BE에서 사용하게 될 접속 URL 정리
+          <br />예: <span class="code-inline">mysql://user:password@mysql:3306/fire_monitoring</span>
+        </li>
+        <li>[ ] 로컬/팀원 PC에서 동일하게 띄웠을 때 접속 확인</li>
+        <li>[ ] 초기 실행 시 자동으로 테이블 생성 + 샘플 데이터 삽입까지 되는지 테스트</li>
+      </ul>
+    </section>
+
+    <!-- 08: 백업/복구 & 문서화 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">08</div>
+          <div class="section-title">백업 · 복구 전략 & 문서화</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 단순 mysqldump 기반 백업/복구 방법 정리
+          <br />예: <span class="code-inline">mysqldump -u user -p fire_monitoring &gt; backup.sql</span>
+        </li>
+        <li>[ ] 운영 환경을 가정한 주기적 백업/DR(Disaster Recovery) 개념 메모</li>
+        <li>[ ] ERD 다이어그램 작성 (툴: draw.io, dbdiagram.io 등)</li>
+        <li>[ ] 스키마 구조, 테이블 설명, 주요 컬럼 의미를 README 또는 별도 문서로 정리</li>
+        <li>[ ] BE/FE/AI 팀원이 참고할 수 있는 “DB 사용 가이드” 공유</li>
+      </ul>
+    </section>
+
+  </div>
+</body>
+</html>

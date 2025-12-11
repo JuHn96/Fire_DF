@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>프론트엔드 담당 할 일 리스트 (Vue 3 / Vite / WebSocket / Axios / Nginx)</title>
+
+  <style>
+    /* --------------------------------
+       전체 레이아웃 & 배경
+    --------------------------------- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      background-color: #e5e7eb;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 920px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* --------------------------------
+       헤더
+    --------------------------------- */
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: #111827;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    .tagline {
+      font-size: 14px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    .meta-row {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .meta-pill {
+      padding: 3px 8px;
+      border-radius: 999px;
+      background-color: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      color: #6d28d9;
+      font-weight: 500;
+    }
+
+    /* --------------------------------
+       섹션
+    --------------------------------- */
+    .section {
+      margin-bottom: 18px;
+      padding: 18px 18px 16px 18px;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+    }
+
+    /* --------------------------------
+       섹션 타이틀 그룹
+       Violet Pastel Gradient 컬러바
+    --------------------------------- */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .section-bar {
+      width: 5px;
+      height: 34px;
+      border-radius: 6px;
+      background: linear-gradient(
+        to bottom,
+        #ede9fe,   /* 파스텔 연보라 */
+        #c4b5fd,   /* 연한 라벤더 */
+        #818cf8    /* 파스텔 인디고 */
+      );
+      flex-shrink: 0;
+    }
+
+    .section-heading-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .section-index-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 650;
+      color: #111827;
+      letter-spacing: 0.01em;
+    }
+
+    /* --------------------------------
+       리스트
+    --------------------------------- */
+    ul {
+      margin: 6px 0 2px 0;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    /* --------------------------------
+       인라인 코드
+    --------------------------------- */
+    .code-inline {
+      font-family: SFMono-Regular, Menlo, Monaco, monospace;
+      font-size: 12px;
+      background-color: #f3f4ff;
+      color: #4338ca;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #c7d2fe;
+      white-space: nowrap;
+    }
+
+    /* --------------------------------
+       반응형
+    --------------------------------- */
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1>프론트엔드 담당 할 일 리스트</h1>
+      <p class="tagline">
+        Vue 3, Vite, WebSocket, Axios, Nginx 기반으로 대시보드·로그·관리 화면을 구현하기 위한 실제 작업용 To-do 목록입니다.
+      </p>
+
+      <div class="meta-row">
+        <span class="meta-pill">Frontend · Vue 3</span>
+        <span class="meta-pill">Vite · SPA</span>
+        <span class="meta-pill">실시간 · WebSocket</span>
+        <span class="meta-pill">Axios API 연동</span>
+        <span class="meta-pill">Nginx · 정적 배포</span>
+      </div>
+    </header>
+
+    <!-- 01 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">01</div>
+          <div class="section-title">개발 환경 & 프로젝트 구조 세팅</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] Node.js / npm / Vite / Vue 3 버전 정리 및 맞추기</li>
+        <li>[ ] <span class="code-inline">npm create vite@latest</span> 기반 Vue 3 프로젝트 생성</li>
+        <li>[ ] 기본 디렉터리 구조 정리 (<span class="code-inline">/src/components</span>, <span class="code-inline">/src/views</span>, <span class="code-inline">/src/router</span>, <span class="code-inline">/src/store</span> 등)</li>
+        <li>[ ] 전역 스타일 파일, 공통 UI 컴포넌트 폴더 생성</li>
+      </ul>
+    </section>
+
+    <!-- 02 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">02</div>
+          <div class="section-title">공통 레이아웃 & 라우팅 구성</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 상단 헤더 / 좌측(또는 상단) 네비게이션 / 메인 컨텐츠 영역 레이아웃 설계</li>
+        <li>[ ] Vue Router 설정 파일 작성 (<span class="code-inline">/src/router/index.ts</span> 또는 <span class="code-inline">index.js</span>)</li>
+        <li>[ ] 메뉴별 라우트 정의 (메인 대시보드, 서브 대시보드, 로그, CCTV 관리, 마이페이지 등)</li>
+        <li>[ ] 현재 선택된 메뉴에 대한 활성화 스타일 적용</li>
+      </ul>
+    </section>
+
+    <!-- 03 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">03</div>
+          <div class="section-title">메인 대시보드 (1~16번 CCTV 타일)</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 1~16번 CCTV를 보여주는 그리드 타일 레이아웃 구현</li>
+        <li>[ ] 각 타일에 카메라 이름 / 그룹 / 상태(정상·주의·위험) 표시</li>
+        <li>[ ] 위험도에 따라 타일 배경 또는 테두리 색상 다르게 표시</li>
+        <li>[ ] 타일 클릭 시 해당 CCTV 그룹/카메라 기준으로 서브 대시보드 화면으로 이동</li>
+      </ul>
+    </section>
+
+    <!-- 04 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">04</div>
+          <div class="section-title">서브 대시보드 (16분할 CCTV 상세)</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 선택된 그룹의 CCTV 최대 16개를 4×4 등 레이아웃으로 표시</li>
+        <li>[ ] 각 영상 카드에 채널 번호, 이름, 현재 상태 배지 표시</li>
+        <li>[ ] 특정 채널 클릭 시 단일 확대 모달(또는 우측 패널)로 크게 보기 기능</li>
+        <li>[ ] 실시간 이벤트 발생 시 해당 채널 카드 테두리/아이콘 강조</li>
+      </ul>
+    </section>
+
+    <!-- 05 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">05</div>
+          <div class="section-title">이벤트 로그 & 통계 화면</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 기간, 카메라, 위험도 등 필터 UI 구성</li>
+        <li>[ ] 이벤트 로그 테이블(시간, 카메라, 위험도, 상태, 비고 등) 구현</li>
+        <li>[ ] 행 클릭 시 우측/하단에 감지 이미지 및 세부 정보 표시</li>
+        <li>[ ] 일/주/월별 이벤트 발생 건수 차트(Bar/Line) 영역 레이아웃 구성</li>
+      </ul>
+    </section>
+
+    <!-- 06 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">06</div>
+          <div class="section-title">CCTV 관리 화면</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] CCTV 목록 테이블 (장비 ID, 이름, 그룹, 메인 여부, 비고 등) 구성</li>
+        <li>[ ] CCTV 추가/수정/삭제를 위한 모달 또는 사이드 패널 UI 구현</li>
+        <li>[ ] 메인 대시보드·서브 대시보드와 연동되는 필드(그룹, 메인 지정 등) 표시</li>
+        <li>[ ] 저장/삭제 시 확인 다이얼로그 및 결과 토스트 메시지 표시</li>
+      </ul>
+    </section>
+
+    <!-- 07 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">07</div>
+          <div class="section-title">마이페이지 & 알림 설정 UI</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] 사용자 기본 정보(이름, 이메일 정도) 조회/표시 화면 구성</li>
+        <li>[ ] 카카오톡 연동 상태 표시 (연동됨 / 미연동) 및 연동/해제 버튼 UI</li>
+        <li>[ ] 1단계/2단계 알림 여부 등 알림 수신 조건 설정 토글/스위치 UI</li>
+        <li>[ ] 설정 변경 시 “저장 완료” 등의 피드백 토스트/배너 표시</li>
+      </ul>
+    </section>
+
+    <!-- 08 -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-bar"></div>
+        <div class="section-heading-text">
+          <div class="section-index-text">08</div>
+          <div class="section-title">실시간 연동 & API 통신 공통 모듈</div>
+        </div>
+      </div>
+      <ul>
+        <li>[ ] WebSocket 클라이언트 유틸 작성 (연결/재연결/메시지 핸들러)</li>
+        <li>[ ] 실시간 알림 수신 시 대시보드 타일 강조 + 알림 팝업 연동</li>
+        <li>[ ] Axios 인스턴스 생성 (Base URL, 공통 헤더, 인터셉터 등 설정)</li>
+        <li>[ ] API 호출 시 로딩 인디케이터 / 에러 토스트 공통 처리</li>
+        <li>[ ] <span class="code-inline">.env</span> 기반 API 서버 주소 분리 (개발/운영 전환 대비)</li>
+      </ul>
+    </section>
+
+  </div>
+</body>
+</html>

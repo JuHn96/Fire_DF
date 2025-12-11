@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>회고 요약본</title>
+  <style>
+    /* 2-C 공통 스타일 시작 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+    }
+
+    ul {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* 2-C 공통 스타일 끝 */
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>회고 요약본</h1>
+    </header>
+
+    <div class="section">
+      <h2>1. 프로젝트 개요</h2>
+      <ul>
+        <li><strong>프로젝트명:</strong> AI 기반 실시간 CCTV 화재 감지 시스템</li>
+        <li><strong>한 줄 설명:</strong> 기존 CCTV 영상을 활용해 AI로 화재를 실시간 감지하고 대시보드·카카오 알림으로 전달하는 관제용 웹 시스템</li>
+        <li><strong>수행 기간:</strong> 25.12.09-26.01.06 </li>
+        <li><strong>팀 역할:</strong>
+          <ul>
+            <li>AI: 모델 학습·튜닝, RTSP 처리</li>
+            <li>BE: FastAPI API, 이벤트 로직, WebSocket, DB 연동</li>
+            <li>DB: 스키마 설계, 정규화</li>
+            <li>FE: Vue 대시보드, 로그/통계, CCTV 관리 화면</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>2. 프로젝트 목적</h2>
+      <h3>기술적 목적</h3>
+      <ul>
+        <li>기존 CCTV 인프라 그대로 사용하면서 AI 기반 화재 감지 기능 추가</li>
+        <li>실시간 대시보드 + 카카오 알림으로 빠른 대응 지원</li>
+        <li>Docker 기반으로 개발/테스트/운영 환경을 통합</li>
+      </ul>
+
+      <h3>학습/역량 목적</h3>
+      <ul>
+        <li>AI / FE / BE / DB 전체 파트를 하나의 실제 서비스로 연결</li>
+        <li>팀 단위 협업 및 문서화 경험 확보</li>
+        <li>WebSocket, RTSP, 카카오 등 실무 기술스택 경험</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. 시스템 구성 요약</h2>
+      <ul>
+        <li><strong>입력:</strong> CCTV/NVR RTSP 스트림</li>
+        <li><strong>AI:</strong> 화재 모델, 신뢰도/시간 기준 이벤트 발생</li>
+        <li><strong>BE:</strong> 이벤트 로직, WebSocket, 카카오, DB 연동</li>
+        <li><strong>DB:</strong> 이벤트 로그, CCTV 정보, 템플릿 등 저장</li>
+        <li><strong>FE(VUE):</strong> 대시보드, 로그/통계, CCTV 관리, 마이페이지</li>
+        <li><strong>인프라:</strong> Docker Compose 통합 실행 구조</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>4. 수행 과정 요약</h2>
+      <ul>
+        <li>주제 선정 → 전체 구조 확정(“CCTV + AI + 웹 + 카카오”)</li>
+        <li>역할 분담 후 깃허브 협업 구조 세팅</li>
+        <li>DB 스키마·API·WebSocket·카카오·이벤트 플로우 순으로 백본 구축</li>
+        <li>대시보드·로그/통계·CCTV 관리 등 UI 구조 정리</li>
+        <li>기업프로젝트 제출에 맞춘 문서/플로우/아키텍처 전체 구조화</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>5. 성과·잘된 점</h2>
+      <ul>
+        <li>“CCTV → AI → BE → DB → FE → 카카오” 전체 흐름을 하나의 서비스로 연결</li>
+        <li>역할 간 책임이 분명해 협업 효율적</li>
+        <li>문서화 병행으로 전체 구조를 팀원 전원이 동일하게 이해</li>
+        <li>RTSP, Docker, WebSocket, 카카오 등 실무 핵심 기술을 실제 적용</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. 팀 협업 회고</h2>
+      <ul>
+        <li>백엔드·AI·FE·DB가 서로의 관점에서 요구사항을 반복적으로 조율하며 협업 경험을 쌓음</li>
+        <li>API 정의가 단순한 스펙이 아니라 팀 간 약속이라는 점을 체감함</li>
+        <li>문서화가 쌓일수록 프로젝트 의사결정이 명확해지고 작업 효율이 올라감</li>
+        <li>역할 분담이 되어 있어도 한 서비스 안에서 생기는 문제를 함께 풀어가는 과정이 의미 있었음</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>7. 향후 개선 방향</h2>
+      <ul>
+        <li>화재 + 인명 감지 모델(쓰러짐/움직임 없음 등) 추가</li>
+        <li>ELK·Prometheus/Grafana 등을 이용한 고급 로그·모니터링 시스템 구축</li>
+        <li>CI/CD 자동화(GitHub Actions)로 빌드/배포 파이프라인 구성</li>
+        <li>네트워크 장애, 카메라 오류, 저장소 임계점 등 실제 운영 이슈 대응 로직 강화</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebSocket 메시지 구조 설계</title>
+  <style>
+    /* 2-C 공통 스타일 시작 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 15px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+    }
+
+    ul {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .summary-box {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border-left: 5px solid #818cf8;
+      background: linear-gradient(to right, #eef2ff, #f5f3ff);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      font-size: 15px;
+    }
+
+    pre {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 12px;
+      margin-bottom: 12px;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      border: 1px solid #111827;
+    }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      margin-bottom: 18px;
+    }
+
+    table th, table td {
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    table th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* 2-C 공통 스타일 끝 */
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>WebSocket 메시지 구조 설계</h1>
+    </header>
+
+    <div class="section">
+      <h2>목적</h2>
+      <p>
+        WebSocket은 이 시스템에서 <strong>실시간 알림 및 상태 변화 전달</strong>을 담당한다.
+        FE(Vue)는 WebSocket을 통해 서버에서 발생하는 이벤트를 끊김 없이 계속 수신하고,
+        대시보드를 실시간으로 업데이트한다.
+      </p>
+      <p>
+        WebSocket을 통해 전달되는 메시지는 다음 역할을 수행한다:
+      </p>
+      <ul>
+        <li>새 화재/연기 이벤트 실시간 도착</li>
+        <li>CCTV 연결 상태 변화 감지</li>
+        <li>시스템 공지 전달</li>
+        <li>기존 이벤트의 상태 변경 전달</li>
+        <li>초기 화면 렌더링을 위한 전체 요약 정보 제공</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>기본 메시지 공통 구조</h2>
+      <p>모든 WebSocket 메시지는 아래 공통 포맷을 따른다:</p>
+
+<pre>{
+  "type": "MESSAGE_TYPE",
+  "timestamp": "2025-12-11T10:33:05Z",
+  "payload": {
+    // 실제 내용
+  }
+}
+</pre>
+
+      <h3>필드 설명</h3>
+      <ul>
+        <li><code>type</code> : 메시지 종류(NEW_EVENT, INIT_STATE 등)를 나타내는 문자열</li>
+        <li><code>timestamp</code> : 메시지를 생성한 시각(ISO 8601)</li>
+        <li><code>payload</code> : 각 타입에 따라 내용이 달라지는 객체(실제 데이터)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>메시지 타입 전체 목록</h2>
+      <p>아래는 현재 시스템에서 사용할 WebSocket 메시지 타입들이다.</p>
+      <table>
+        <tr><th>타입명</th><th>설명</th></tr>
+        <tr><td><code>INIT_STATE</code></td><td>초기 연결 시 전체 요약 정보 전달</td></tr>
+        <tr><td><code>NEW_EVENT</code></td><td>새 화재/연기 이벤트 발생</td></tr>
+        <tr><td><code>EVENT_UPDATED</code></td><td>이벤트 상태 변경</td></tr>
+        <tr><td><code>CAMERA_STATUS</code></td><td>CCTV 온라인/오프라인 변경</td></tr>
+        <tr><td><code>SYSTEM_NOTICE</code></td><td>시스템 공지(서버 지연 등)</td></tr>
+        <tr><td><code>PING</code> / <code>PONG</code></td><td>연결 유지용</td></tr>
+        <tr><td><code>ERROR</code></td><td>서버 오류 전달</td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>INIT_STATE (초기 상태 동기화)</h2>
+      <p><strong>FE가 WebSocket에 처음 연결될 때 자동 전송됨.</strong></p>
+      <p>
+        <strong>목적</strong><br />
+        - 메인 대시보드에 필요한 모든 초기 데이터 제공<br />
+        - 오늘 요약 + 최근 이벤트 목록 + 카메라 상태 정보 포함
+      </p>
+
+<pre>{
+  "type": "INIT_STATE",
+  "timestamp": "2025-12-11T10:30:00Z",
+  "payload": {
+    "summary": {
+      "today_event_count": 12,
+      "today_danger_count": 3,
+      "active_cameras": 14,
+      "offline_cameras": 2
+    },
+    "recent_events": [
+      {
+        "event_id": 101,
+        "camera_id": 3,
+        "camera_name": "1층 로비-1번",
+        "level": "DANGER",
+        "detected_at": "2025-12-11T10:25:30",
+        "message": "1층 로비 화염 감지",
+        "image_path": "/events/2025/12/11/event_101.jpg"
+      },
+      {
+        "event_id": 100,
+        "camera_id": 5,
+        "camera_name": "지하 주차장-2번",
+        "level": "WARNING",
+        "detected_at": "2025-12-11T10:20:10",
+        "message": "지하 주차장 연기 의심",
+        "image_path": "/events/2025/12/11/event_100.jpg"
+      }
+    ],
+    "camera_status": [
+      { "camera_id": 3, "status": "ONLINE" },
+      { "camera_id": 5, "status": "OFFLINE" }
+    ]
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>summary.today_event_count</code> : 오늘 발생한 전체 이벤트 수</li>
+        <li><code>summary.today_danger_count</code> : 오늘 발생한 DANGER 이상 이벤트 수</li>
+        <li><code>summary.active_cameras</code> : 현재 ONLINE 상태의 카메라 수</li>
+        <li><code>summary.offline_cameras</code> : 현재 OFFLINE 상태의 카메라 수</li>
+        <li><code>recent_events</code> : 최근 발생한 이벤트 목록(대시보드 알림/로그 리스트 초기값)</li>
+        <li><code>camera_status</code> : 각 카메라의 현재 상태 요약 정보</li>
+      </ul>
+      <p>FE에서는 이 메시지를 받아서 대시보드 상단 요약 카드, 최근 이벤트 리스트, 카메라 상태를 한 번에 초기화한다.</p>
+    </div>
+
+    <div class="section">
+      <h2>NEW_EVENT (새 이벤트 발생)</h2>
+      <p><strong>가장 중요한 메시지.</strong><br />
+      AI가 화재/연기를 감지 → BE에 전달 → DB 저장 → WebSocket으로 실시간 브로드캐스트
+      </p>
+
+<pre>{
+  "type": "NEW_EVENT",
+  "timestamp": "2025-12-11T10:33:12Z",
+  "payload": {
+    "event_id": 102,
+    "camera_id": 3,
+    "camera_name": "1층 로비-1번",
+    "group_name": "1층 로비",
+    "level": "DANGER",
+    "detected_at": "2025-12-11T10:33:05",
+    "message": "화염 강도 증가",
+    "image_path": "/events/2025/12/11/event_102.jpg",
+    "boxes": [
+      {
+        "x1": 120,
+        "y1": 200,
+        "x2": 300,
+        "y2": 450,
+        "label": "fire",
+        "score": 0.95
+      }
+    ]
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>event_id</code> : 저장된 이벤트의 고유 ID</li>
+        <li><code>camera_id</code>, <code>camera_name</code> : 이벤트가 발생한 카메라 정보</li>
+        <li><code>group_name</code> : 카메라가 속한 그룹(층/구역) 이름</li>
+        <li><code>level</code> : 이벤트 레벨 (INFO / WARNING / DANGER / CRITICAL)</li>
+        <li><code>detected_at</code> : AI가 실제 감지를 수행한 시각</li>
+        <li><code>message</code> : UI 알림에 바로 쓰일 수 있는 요약 메시지</li>
+        <li><code>image_path</code> : 이벤트 스냅샷 이미지 경로 또는 URL</li>
+        <li><code>boxes</code> : 감지된 객체(불꽃/연기)의 좌표 및 라벨·신뢰도 리스트</li>
+      </ul>
+      <p>FE에서는 이 메시지를 수신하면 해당 카메라 카드 강조, 알림 패널 추가, 팝업 띄우기 등 실시간 경보 UI를 갱신한다.</p>
+    </div>
+
+    <div class="section">
+      <h2>EVENT_UPDATED (이벤트 상태 변경)</h2>
+      <p><strong>언제 발생?</strong><br />
+      - 관리자/운용자가 이벤트 상태를 "확인(ACK)", "조치 완료" 등으로 변경할 때
+      </p>
+
+<pre>{
+  "type": "EVENT_UPDATED",
+  "timestamp": "2025-12-11T10:40:00Z",
+  "payload": {
+    "event_id": 102,
+    "camera_id": 3,
+    "status": "ACKED",
+    "updated_by": "admin01",
+    "updated_at": "2025-12-11T10:39:55"
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>event_id</code> : 상태가 변경된 이벤트 ID</li>
+        <li><code>camera_id</code> : 해당 이벤트가 속한 카메라 ID</li>
+        <li><code>status</code> : 이벤트 상태(예: NEW / ACKED / RESOLVED)</li>
+        <li><code>updated_by</code> : 상태 변경을 수행한 사용자 ID 또는 이름</li>
+        <li><code>updated_at</code> : 상태 변경 시각</li>
+      </ul>
+      <p>FE에서는 이벤트 리스트와 상세 화면에서 해당 이벤트의 상태 표시(아이콘/색상 등)를 업데이트한다.</p>
+    </div>
+
+    <div class="section">
+      <h2>CAMERA_STATUS (CCTV 상태 변화 알림)</h2>
+      <p>
+        CCTV가 네트워크 문제 또는 장치 문제로 <strong>OFFLINE/ONLINE</strong> 상태가 바뀔 때 전달되는 메시지이다.
+      </p>
+
+<pre>{
+  "type": "CAMERA_STATUS",
+  "timestamp": "2025-12-11T10:45:20Z",
+  "payload": {
+    "camera_id": 7,
+    "camera_name": "지하 주차장-1번",
+    "status": "OFFLINE",
+    "last_checked_at": "2025-12-11T10:45:18"
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>camera_id</code> : 상태가 변경된 카메라 ID</li>
+        <li><code>camera_name</code> : 카메라 이름</li>
+        <li><code>status</code> : ONLINE / OFFLINE / ERROR 등 상태 값</li>
+        <li><code>last_checked_at</code> : 마지막 상태 점검/헬스 체크 시각</li>
+      </ul>
+      <p>FE에서는 해당 카메라 카드를 회색 처리하거나 "OFFLINE" 배지 표시 등으로 상태 변화를 시각적으로 보여준다.</p>
+    </div>
+
+    <div class="section">
+      <h2>SYSTEM_NOTICE (시스템 공지)</h2>
+      <p>
+        AI 서버 지연, DB 응답 저하 등 운영자에게 알릴 시스템 레벨 메시지를 보낼 때 사용한다.
+      </p>
+
+<pre>{
+  "type": "SYSTEM_NOTICE",
+  "timestamp": "2025-12-11T10:50:00Z",
+  "payload": {
+    "level": "WARNING",
+    "code": "AI_SERVER_DELAY",
+    "message": "AI 서버 응답 지연",
+    "detail": "최근 1분 평균 처리 시간 5초 초과"
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>level</code> : INFO / WARNING / ERROR 등 알림 수준</li>
+        <li><code>code</code> : 시스템 공지를 식별하기 위한 코드 값</li>
+        <li><code>message</code> : 한 줄 요약 메시지(배너/알림용)</li>
+        <li><code>detail</code> : 추가 상세 설명(선택)</li>
+      </ul>
+      <p>FE에서는 상단 시스템 배너나 별도의 시스템 상태 패널에 표시하여 운영자가 인지할 수 있게 한다.</p>
+    </div>
+
+    <div class="section">
+      <h2>PING / PONG (연결 유지)</h2>
+      <p>
+        일정 간격으로 PING을 보내고 PONG을 받는 방식으로 WebSocket 연결이 살아있는지 확인할 수 있다.
+      </p>
+
+<pre>{
+  "type": "PING",
+  "timestamp": "2025-12-11T10:55:00Z",
+  "payload": {}
+}
+</pre>
+
+<pre>{
+  "type": "PONG",
+  "timestamp": "2025-12-11T10:55:00Z",
+  "payload": {}
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>type</code> : PING 또는 PONG으로 구분</li>
+        <li><code>payload</code> : 보통 비워두며, 연결 체크 목적</li>
+      </ul>
+      <p>프론트 또는 서버에서 일정 시간 동안 PING/PONG 교환이 없으면 재연결을 시도하는 로직을 둘 수 있다.</p>
+    </div>
+
+    <div class="section">
+      <h2>ERROR (에러 메시지)</h2>
+      <p>
+        클라이언트가 잘못된 메시지를 보내거나 서버에서 WebSocket 처리 중 오류가 발생했을 때,
+        원인을 알려주기 위한 메시지이다.
+      </p>
+
+<pre>{
+  "type": "ERROR",
+  "timestamp": "2025-12-11T10:56:10Z",
+  "payload": {
+    "code": "INVALID_MESSAGE_FORMAT",
+    "message": "클라이언트가 잘못된 JSON을 전송했습니다."
+  }
+}
+</pre>
+
+      <h3>코드별 설명</h3>
+      <ul>
+        <li><code>code</code> : 에러 유형 식별 코드</li>
+        <li><code>message</code> : 사람이 읽을 수 있는 에러 설명</li>
+      </ul>
+      <p>FE에서는 이 메시지를 로그에 남기거나, 필요 시 사용자에게 알림으로 표시할 수 있다.</p>
+    </div>
+
+    <div class="section">
+      <h2>서버(WebSocket) 처리 흐름 요약</h2>
+      <p>서버(BE) 쪽 흐름은 다음과 같다.</p>
+      <ul>
+        <li>클라이언트 연결 수립 시:
+          <ul>
+            <li>클라이언트 세션 목록에 추가</li>
+            <li>선택적으로 <code>INIT_STATE</code> 전송</li>
+          </ul>
+        </li>
+        <li>AI → BE 이벤트 저장 시:
+          <ul>
+            <li>DB에 <code>event</code> 레코드 생성</li>
+            <li>WebSocket 세션 전체에 <code>NEW_EVENT</code> 브로드캐스트</li>
+          </ul>
+        </li>
+        <li>유저가 이벤트 확인 처리 시:
+          <ul>
+            <li>DB에서 이벤트 상태 업데이트</li>
+            <li>WebSocket으로 <code>EVENT_UPDATED</code> 송신</li>
+          </ul>
+        </li>
+        <li>카메라 상태 모니터링 로직:
+          <ul>
+            <li>상태 변화 감지 시 <code>CAMERA_STATUS</code> 송신</li>
+          </ul>
+        </li>
+        <li>시스템 이슈 발생 시:
+          <ul>
+            <li><code>SYSTEM_NOTICE</code> 송신</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>클라이언트(FE) 처리 흐름 요약</h2>
+      <p>클라이언트(Vue) 쪽 흐름은 다음과 같다.</p>
+      <ul>
+        <li>앱 로딩 시 WebSocket 연결</li>
+        <li><code>INIT_STATE</code> 수신 → 대시보드 초기 데이터 셋팅</li>
+        <li><code>NEW_EVENT</code> 수신 → UI 알림 + 카드 하이라이트</li>
+        <li><code>EVENT_UPDATED</code> 수신 → 리스트/카드 상태 반영</li>
+        <li><code>CAMERA_STATUS</code> 수신 → 카메라 상태 아이콘/배지 변경</li>
+        <li><code>SYSTEM_NOTICE</code> 수신 → 상단 배너 또는 시스템 패널 표시</li>
+        <li>연결이 끊기면 → 자동 재연결 시도</li>
+      </ul>
+    </div>
+
+  </div>
+</body>
+</html>

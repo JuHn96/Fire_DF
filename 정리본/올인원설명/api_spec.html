@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>API 스펙 정리</title>
+  <style>
+    /* 2-C 공통 스타일 시작 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 15px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+    }
+
+    ul {
+      margin-top: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .summary-box {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border-left: 5px solid #818cf8;
+      background: linear-gradient(to right, #eef2ff, #f5f3ff);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      font-size: 15px;
+    }
+
+    pre {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 14px 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 12px;
+      margin-bottom: 14px;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      border: 1px solid #111827;
+    }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* 2-C 공통 스타일 끝 */
+
+    /* 표 스타일 (원본 유지) */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      margin-bottom: 18px;
+    }
+
+    table th, table td {
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    table th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>API 스펙 정리</h1>
+    </header>
+
+    <div class="section">
+      <h2>공통 규칙</h2>
+      <ul>
+        <li><strong>Base URL:</strong> <code>/api</code></li>
+        <li>요청/응답 포맷: <strong>JSON</strong></li>
+        <li>시간 형식: <strong>ISO 8601 문자열</strong></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>도메인 구성</h2>
+      <ul>
+        <li>헬스체크 / 시스템 상태</li>
+        <li>이벤트(Event) 관리</li>
+        <li>CCTV(Camera) 관리</li>
+        <li>대시보드 요약 / 통계</li>
+        <li>카카오 알림 테스트 API (선택)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>헬스체크 API</h2>
+
+      <h3>시스템 상태 확인</h3>
+      <p><strong>GET /api/health</strong></p>
+
+<pre>{
+  "status": "OK",
+  "backend": "UP",
+  "database": "UP",
+  "ai_server": "UP",
+  "timestamp": "2025-12-11T10:25:00"
+}
+</pre>
+    </div>
+
+    <div class="section">
+      <h2>이벤트(Event) API</h2>
+
+      <h3>이벤트 생성 (AI → BE)</h3>
+      <p><strong>POST /api/events</strong></p>
+
+<pre>{
+  "camera_id": 3,
+  "detected_at": "2025-12-11T10:33:05",
+  "level": "DANGER",
+  "message": "1층 로비 화염 감지",
+  "image_path": "/events/2025/12/11/event_102.jpg",
+  "boxes": [
+    {
+      "x1": 120, "y1": 200,
+      "x2": 300, "y2": 450,
+      "score": 0.95,
+      "label": "fire"
+    }
+  ],
+  "raw_payload": {
+    "model": "yolov8n",
+    "fps": 12.4
+  }
+}
+</pre>
+
+      <p>응답:</p>
+<pre>{
+  "event_id": 102,
+  "status": "CREATED"
+}
+</pre>
+
+      <h3>이벤트 목록 조회</h3>
+      <p><strong>GET /api/events</strong></p>
+
+<pre>{
+  "page": 1,
+  "size": 10,
+  "total_count": 32,
+  "items": [
+    {
+      "event_id": 102,
+      "camera_id": 3,
+      "camera_name": "1층 로비-1번",
+      "level": "DANGER",
+      "detected_at": "2025-12-11T10:33:05",
+      "message": "1층 로비 화염 감지",
+      "image_path": "/events/2025/12/11/event_102.jpg"
+    }
+  ]
+}
+</pre>
+
+      <h3>이벤트 상세 조회</h3>
+      <p><strong>GET /api/events/{event_id}</strong></p>
+
+<pre>{
+  "event_id": 102,
+  "camera": {
+    "id": 3,
+    "name": "1층 로비-1번",
+    "group_name": "1층 로비"
+  },
+  "level": "DANGER",
+  "detected_at": "2025-12-11T10:33:05",
+  "message": "1층 로비 화염 감지",
+  "image_path": "/events/2025/12/11/event_102.jpg",
+  "boxes": [
+    {
+      "x1": 120, "y1": 200,
+      "x2": 300, "y2": 450,
+      "score": 0.95,
+      "label": "fire"
+    }
+  ],
+  "raw_payload": { "model": "yolov8n" }
+}
+</pre>
+
+      <h3>이벤트 상태 변경</h3>
+      <p><strong>PATCH /api/events/{event_id}</strong></p>
+
+      <p>요청:</p>
+<pre>{
+  "status": "ACKED",
+  "memo": "현장 출동",
+  "updated_by": "admin01"
+}
+</pre>
+
+      <p>응답:</p>
+<pre>{
+  "event_id": 102,
+  "status": "ACKED",
+  "updated_by": "admin01",
+  "updated_at": "2025-12-11T10:40:00"
+}
+</pre>
+
+    </div>
+
+    <div class="section">
+      <h2>CCTV(Camera) API</h2>
+
+      <h3>목록 조회</h3>
+      <p><strong>GET /api/cctv</strong></p>
+
+<pre>{
+  "items": [
+    {
+      "id": 3,
+      "name": "1층 로비-1번",
+      "group_id": 1,
+      "rtsp_url": "rtsp://192.168.0.10/stream",
+      "location": "1층 로비 입구",
+      "is_main": true,
+      "status": "ONLINE"
+    }
+  ]
+}
+</pre>
+
+      <h3>단건 조회</h3>
+      <p><strong>GET /api/cctv/{id}</strong></p>
+
+      <h3>등록</h3>
+      <p><strong>POST /api/cctv</strong></p>
+
+      <p>요청:</p>
+<pre>{
+  "name": "1층 로비-2번",
+  "group_id": 1,
+  "rtsp_url": "rtsp://192.168.0.11/stream",
+  "location": "1층 중앙",
+  "is_main": true
+}
+</pre>
+
+      <p>응답:</p>
+<pre>{ "id": 6, "status": "CREATED" }</pre>
+
+      <h3>수정</h3>
+      <p><strong>PUT /api/cctv/{id}</strong></p>
+
+      <h3>삭제</h3>
+      <p><strong>DELETE /api/cctv/{id}</strong></p>
+
+    </div>
+
+    <div class="section">
+      <h2>대시보드 / 통계 API</h2>
+
+      <h3>요약 정보</h3>
+      <p><strong>GET /api/dashboard/summary</strong></p>
+
+<pre>{
+  "date": "2025-12-11",
+  "total_events": 24,
+  "danger_events": 5,
+  "critical_events": 1,
+  "active_cameras": 18,
+  "offline_cameras": 2
+}
+</pre>
+
+      <h3>기간별 통계</h3>
+      <p><strong>GET /api/dashboard/events-by-date</strong></p>
+
+      <h3>카메라별 이벤트 Top N</h3>
+      <p><strong>GET /api/dashboard/top-cameras</strong></p>
+    </div>
+
+    <div class="section">
+      <h2>카카오 알림 테스트 API (선택)</h2>
+
+      <h3>테스트 메시지 전송</h3>
+      <p><strong>POST /api/notify/test-kakao</strong></p>
+
+      <p>요청:</p>
+<pre>{
+  "phone_number": "010-1234-5678",
+  "template_name": "default_fire_alert",
+  "variables": {
+    "camera_name": "1층 로비-1번",
+    "time": "2025-12-11 10:33",
+    "level": "DANGER"
+  }
+}
+</pre>
+
+      <p>응답:</p>
+<pre>{
+  "status": "SENT",
+  "provider_message_id": "abc123xyz"
+}
+</pre>
+
+    </div>
+
+  </div>
+</body>
+</html>

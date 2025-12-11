@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>지능형 화재 감지·모니터링 시스템 - 프로젝트 개요</title>
+  <style>
+    /* --------------------------------
+       전체 레이아웃 & 배경
+    --------------------------------- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* --------------------------------
+       제목 / 헤더
+    --------------------------------- */
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      color: #111827;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #111827;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .page-header {
+      margin-bottom: 22px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+    }
+
+    .tagline {
+      font-size: 16px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    /* --------------------------------
+       섹션 카드 + 바이올렛 바
+    --------------------------------- */
+    .section {
+      position: relative;
+      margin-bottom: 22px;
+      padding: 16px 18px 16px 24px;
+      border-radius: 12px;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5e7eb;
+      transition: 0.18s ease;
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to bottom,
+        #ede9fe,
+        #c4b5fd,
+        #818cf8
+      );
+    }
+
+    .section:hover {
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+      transform: translateY(-1px);
+    }
+
+    /* --------------------------------
+       리스트 스타일
+    --------------------------------- */
+    ul {
+      margin-top: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    /* --------------------------------
+       코드 인라인 (컨테이너 이름 등)
+    --------------------------------- */
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* --------------------------------
+       요약 박스 (보라 톤)
+    --------------------------------- */
+    .summary-box {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border-left: 5px solid #818cf8;
+      background: linear-gradient(to right, #eef2ff, #f5f3ff);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      font-size: 15px;
+    }
+
+    /* --------------------------------
+       반응형
+    --------------------------------- */
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1>✔️ 기업프로젝트 전체 주제 (최종 업그레이드 버전)</h1>
+
+      <p class="tagline">
+        🔥 <strong>지능형 화재 감지·모니터링 시스템(기업프로젝트)</strong>
+      </p>
+    </header>
+
+    <div class="section">
+      <p>
+        기존 <strong>CCTV 영상(RTSP)</strong>을 받아와
+        <strong>AI 딥러닝 기반 화재·연기 감지 → 이벤트 저장 → UI 실시간 알림 → 카카오톡 알림 → 로그·객체 이미지 조회</strong>
+        까지 이어지는 전체 파이프라인을 구현하는 프로젝트입니다.
+      </p>
+      <p>
+        모든 기능은 하나의 <strong>반응형 웹 애플리케이션</strong>으로 통합되며,
+        개발·배포는 <strong>Docker 기반</strong>으로 운영됩니다.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>✔️ 핵심 구성 요소</h2>
+      <h3>1) CCTV 영상 실시간 연동</h3>
+      <ul>
+        <li>기존 설치된 CCTV의 <strong>RTSP 주소</strong>로 영상 스트리밍</li>
+        <li>AI 분석용/프론트 UI용으로 영상 이중 활용</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>2) AI 화재 감지</h3>
+      <ul>
+        <li>YOLO 기반 화재/연기 <strong>Detection 또는 Segmentation</strong></li>
+        <li>AI 서버에서 24시간 실시간 프레임 분석</li>
+        <li>단계(1단계·2단계) 판단 후 이벤트 생성</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>3) 백엔드(FastAPI)</h3>
+      <ul>
+        <li>이벤트 저장 API</li>
+        <li>Detection 이미지 업로드/경로 저장</li>
+        <li>CCTV 목록 제공</li>
+        <li><strong>WebSocket</strong> 기반 실시간 알림</li>
+        <li><strong>카카오톡 플러스친구</strong> 알림 API 연동</li>
+        <li>Docker 기반 AI 서버와 함께 운영</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>4) 데이터베이스(MySQL)</h3>
+      <ul>
+        <li>이벤트 로그 테이블</li>
+        <li>감지 이미지 경로 저장 테이블</li>
+        <li>CCTV 장비 관리 테이블</li>
+        <li>사용자 관리 테이블</li>
+        <li><strong>2NF 정규화</strong>, <strong>N:M 관계 설계</strong>, <strong>해싱 기반 파일명 관리</strong></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>5) 프론트엔드(Vue)</h3>
+      <ul>
+        <li><strong>메인 대시보드</strong>: CCTV 1~16 미리보기 + 상태 표시</li>
+        <li><strong>서브 대시보드</strong>: 16분할 CCTV 상세 보기</li>
+        <li><strong>로그 탭</strong>: 과거 이벤트·이미지·통계 그래프</li>
+        <li><strong>CCTV 관리</strong>: 장비 ID / 그룹 / 이름 / 메인 지정</li>
+        <li><strong>마이페이지</strong>: 템플릿·카카오 연동 관리</li>
+        <li>단계별(주의·경고·위험) 색상 시각화 제공</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>6) 알림 시스템</h3>
+      <ul>
+        <li>프로그램 내부 실시간 팝업 알림</li>
+        <li><strong>카카오톡 플러스친구</strong> 자동 메시지</li>
+        <li><strong>WebSocket PUSH</strong> 알림</li>
+        <li>대시보드에서 해당 CCTV 자동 강조·확대</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>7) 전체 개발 환경 & 배포 구조</h3>
+      <ul>
+        <li><strong>Docker + Docker Compose</strong> 기반 통합 구성</li>
+        <li>컨테이너 구성:
+          <ul>
+            <li><code>ai-server</code></li>
+            <li><code>fastapi-backend</code></li>
+            <li><code>mysql-database</code></li>
+            <li><code>vue-frontend</code> + <code>nginx</code></li>
+          </ul>
+        </li>
+        <li>팀원 환경을 동일하게 유지하여 협업 안정성 확보</li>
+        <li>추후 운영 서버에서도 거의 그대로 배포 가능</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>8) 시연 영상 요구사항</h3>
+      <ul>
+        <li>CCTV 영상에서 화염 감지</li>
+        <li>AI 감지 박스 표시</li>
+        <li>이벤트 발생 → UI 팝업</li>
+        <li>카카오톡 알림 전송</li>
+        <li>로그 탭에서 해당 이벤트 조회</li>
+      </ul>
+    </div>
+
+    <div class="summary-box">
+      <strong>요약:</strong><br />
+      기존 CCTV를 활용한 <strong>실시간 AI 화재 감지 + 알림 + 로그·대시보드 시스템</strong>을  
+      Docker 기반으로 개발하는 프로젝트입니다.
+    </div>
+
+  </div>
+</body>
+</html>

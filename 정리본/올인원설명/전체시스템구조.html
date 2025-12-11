@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>전체 시스템 구조 (상세 버전 + Docker Compose 확장)</title>
+  <style>
+    /* --------------------------------
+       전체 레이아웃 & 배경
+    --------------------------------- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #111827;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    /* --------------------------------
+       헤더 영역
+    --------------------------------- */
+    h1, h2, h3, h4 {
+      color: #111827;
+      margin-top: 0;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 12px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-weight: 650;
+      letter-spacing: 0.01em;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-top: 18px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    h4 {
+      font-size: 16px;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 14px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    /* --------------------------------
+       섹션 카드 + 바이올렛 바
+    --------------------------------- */
+    .section {
+      position: relative;
+      margin-bottom: 22px;
+      padding: 16px 18px 16px 24px;
+      border-radius: 12px;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e5e7eb;
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(
+        to bottom,
+        #ede9fe,
+        #c4b5fd,
+        #818cf8
+      );
+    }
+
+    /* --------------------------------
+       리스트
+    --------------------------------- */
+    ul {
+      padding-left: 20px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    li {
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    /* --------------------------------
+       코드 관련
+    --------------------------------- */
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .code-block {
+      background-color: #020617;
+      color: #e5e7eb;
+      padding: 12px 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      white-space: pre;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* --------------------------------
+       기타 강조 요소
+    --------------------------------- */
+    .highlight {
+      background-color: #fef3c7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background-color: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      font-size: 12px;
+      margin-right: 6px;
+      color: #6d28d9;
+    }
+
+    /* --------------------------------
+       반응형
+    --------------------------------- */
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+      h2 {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1>전체 시스템 구조 (상세 버전)</h1>
+      <p class="tagline">
+        CCTV → AI 분석 서버 → FastAPI 백엔드 + MySQL → Vue 대시보드 + 카카오톡 알림까지, 전체 흐름과 구성 요소를 정리한 문서입니다.
+        Docker Compose 부분은 이해를 돕기 위해 조금 더 자세하게 확장했습니다.
+      </p>
+    </header>
+
+    <div class="section">
+      <h2>1. 전체 큰 그림</h2>
+      <p><strong>한 줄 구조</strong></p>
+      <p>
+        <strong>CCTV(RTSP) → AI 분석 서버 → FastAPI 백엔드 + MySQL → Vue 대시보드 + 카카오톡 알림</strong>
+      </p>
+      <p>
+        이 전체를 <strong>Docker Compose</strong>로 한 번에 띄우는 구조입니다.
+      </p>
+      <p><strong>컨테이너 레벨로 보면:</strong></p>
+      <ul>
+        <li><code>ai-server</code></li>
+        <li><code>backend-api</code> (FastAPI)</li>
+        <li><code>mysql-db</code></li>
+        <li><code>frontend</code> (Vue 빌드 결과)</li>
+        <li><code>nginx-gateway</code> (정적 파일 + API 리버스 프록시)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>2. 네트워크 / 포트 구조</h2>
+      <p><strong>공통 Docker 네트워크</strong>: <code>fire-net</code> (예시)</p>
+      <ul>
+        <li><strong>mysql-db</strong>
+          <ul>
+            <li>내부 포트: <code>3306</code></li>
+            <li>외부 포트: 필요하면 <code>3307:3306</code> 식으로 매핑</li>
+          </ul>
+        </li>
+        <li><strong>backend-api</strong>
+          <ul>
+            <li>내부 포트: <code>8000</code></li>
+            <li>외부 포트: <code>8080:8000</code> (개발용)</li>
+            <li>다른 컨테이너에서 접근 시: <code>http://backend-api:8000</code></li>
+          </ul>
+        </li>
+        <li><strong>ai-server</strong>
+          <ul>
+            <li>내부 포트: 필요 시 <code>5000</code> 등 사용 (혹은 외부 포트 없음)</li>
+          </ul>
+        </li>
+        <li><strong>nginx-gateway</strong>
+          <ul>
+            <li>외부 포트: <code>80:80</code> 또는 <code>8081:80</code></li>
+            <li>프론트: <code>/</code> 로 Vue 정적 페이지 제공</li>
+            <li>API: <code>/api</code> → <code>backend-api:8000</code> 리버스 프록시</li>
+            <li>WebSocket: <code>/ws</code> → <code>backend-api:8000</code> WebSocket 프록시</li>
+          </ul>
+        </li>
+      </ul>
+      <p>프론트에서 사용할 실제 주소 예시:</p>
+      <ul>
+        <li>REST API: <code>GET /api/events</code></li>
+        <li>WebSocket: <code>ws://서버주소/ws/alerts</code></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3. 각 컴포넌트 상세 역할</h2>
+
+      <h3>3-1. CCTV / RTSP 소스</h3>
+      <ul>
+        <li>각 현장 CCTV가 <strong>RTSP URL</strong>을 제공
+          <ul>
+            <li>예: <code>rtsp://192.168.0.10:554/stream1</code></li>
+          </ul>
+        </li>
+        <li>이 URL 목록은 <strong>MySQL의 <code>cctv</code> 테이블</strong>에 저장
+          <ul>
+            <li>예: <code>id</code>, <code>name</code>, <code>rtsp_url</code>, <code>group_id</code>, <code>is_main</code>, <code>status</code> 등</li>
+          </ul>
+        </li>
+        <li><code>ai-server</code>가 이 RTSP URL들을 주기적으로 읽어서 스트림을 풀링</li>
+      </ul>
+
+      <h3>3-2. AI 분석 서버 (<code>ai-server</code> 컨테이너)</h3>
+      <p><strong>사용 기술 (예상)</strong></p>
+      <ul>
+        <li>Python + OpenCV + YOLOv8(또는 YOLOv5)</li>
+        <li>RTSP → 프레임 캡처 → 모델 추론</li>
+      </ul>
+      <p><strong>역할 상세</strong></p>
+      <ol>
+        <li>
+          <strong>RTSP 연결 &amp; 프레임 읽기</strong>
+          <ul>
+            <li><code>cctv</code> 테이블 또는 설정 파일에서 RTSP URL 목록 가져오기</li>
+            <li>각 URL마다 쓰레드/프로세스를 하나씩 띄워서 무한 루프로 프레임 읽기</li>
+          </ul>
+        </li>
+        <li>
+          <strong>화재/연기 Detection</strong>
+          <ul>
+            <li>YOLO 모델에 프레임 입력</li>
+            <li>결과에서 “불꽃 / 연기” 클래스만 필터</li>
+            <li>위험도 계산 로직 (예시)
+              <ul>
+                <li>감지 박스 개수</li>
+                <li>신뢰도(score)</li>
+                <li>감지 시간 지속 여부</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>이벤트 판단</strong>
+          <ul>
+            <li>이전 프레임 대비 “새로운 화재 이벤트인지” 판단</li>
+            <li>예: 3초 이상 연속 감지되면 이벤트 발생으로 인정</li>
+          </ul>
+        </li>
+        <li>
+          <strong>백엔드로 이벤트 전송</strong>
+          <ul>
+            <li><code>POST http://backend-api:8000/api/events</code></li>
+            <li>바디 예시(JSON):
+              <div class="code-block">
+{
+  "camera_id": 3,
+  "detected_at": "2025-12-11T10:23:45",
+  "level": "DANGER",
+  "image_url": "http://.../images/event_20251211_102345_cam3.jpg",
+  "boxes": [
+    {"x1": 120, "y1": 200, "x2": 300, "y2": 450, "score": 0.92, "label": "fire"}
+  ]
+}
+              </div>
+            </li>
+            <li>이미지 저장 방식 예시:
+              <ul>
+                <li>이미지 파일을 <code>ai-server</code>에서 공유 볼륨에 저장 후 경로만 전달</li>
+                <li>또는 외부 스토리지(S3 유사)에 업로드 후 URL 전달</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>3-3. 백엔드 서버 (<code>backend-api</code> 컨테이너, FastAPI)</h3>
+      <p><strong>구조 예시</strong></p>
+      <ul>
+        <li><code>app/main.py</code> — 엔트리 포인트</li>
+        <li><code>app/routers/events.py</code> — 이벤트 관련 API</li>
+        <li><code>app/routers/cctv.py</code> — CCTV 관리 API</li>
+        <li><code>app/db/session.py</code> — DB 연결 세션</li>
+        <li><code>app/models/*</code> — SQLAlchemy 모델</li>
+        <li><code>app/schemas/*</code> — Pydantic 스키마</li>
+        <li><code>app/services/*</code> — 비즈니스 로직</li>
+      </ul>
+
+      <p><strong>주요 기능</strong></p>
+      <ol>
+        <li>
+          <strong>헬스체크</strong>
+          <ul>
+            <li><code>GET /api/health</code></li>
+            <li>상태 확인(OK, DB 연결 여부 등)</li>
+          </ul>
+        </li>
+        <li>
+          <strong>이벤트 수신 (AI → BE)</strong>
+          <ul>
+            <li><code>POST /api/events</code></li>
+            <li>요청 바디: AI 서버에서 보내준 JSON 구조</li>
+            <li>처리:
+              <ul>
+                <li>DB <code>event</code> 테이블에 저장</li>
+                <li>이벤트 발생 시 WebSocket 채널로 브로드캐스트</li>
+                <li>조건에 따라 카카오 알림 전송</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>이벤트 조회 (FE → BE)</strong>
+          <ul>
+            <li><code>GET /api/events</code>
+              <ul>
+                <li>쿼리 파라미터: <code>from</code>, <code>to</code>, <code>camera_id</code>, <code>level</code> 등</li>
+                <li>페이징: <code>page</code>, <code>size</code></li>
+              </ul>
+            </li>
+            <li><code>GET /api/events/{event_id}</code></li>
+          </ul>
+        </li>
+        <li>
+          <strong>CCTV 관리 API</strong>
+          <ul>
+            <li><code>GET /api/cctv</code>, <code>POST /api/cctv</code>, <code>PUT /api/cctv/{id}</code>, <code>DELETE /api/cctv/{id}</code></li>
+          </ul>
+        </li>
+        <li>
+          <strong>WebSocket 실시간 알림</strong>
+          <ul>
+            <li>엔드포인트: <code>/ws/alerts</code></li>
+            <li>새 이벤트 저장 시 <code>{ type: "NEW_EVENT", data: { ... } }</code> 형식으로 푸시</li>
+          </ul>
+        </li>
+        <li>
+          <strong>카카오톡 알림 연동</strong>
+          <ul>
+            <li>별도 모듈: <code>app/services/kakao.py</code></li>
+            <li><code>level == "DANGER"</code> 이상일 때만 알림 전송 등 룰 적용</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>3-4. 데이터베이스 (<code>mysql-db</code> 컨테이너)</h3>
+      <p><strong>핵심 테이블 예시</strong></p>
+      <ul>
+        <li><code>cctv</code>
+          <ul>
+            <li><code>id</code> (PK)</li>
+            <li><code>name</code></li>
+            <li><code>rtsp_url</code></li>
+            <li><code>group_id</code></li>
+            <li><code>is_main</code> (T/F)</li>
+            <li><code>location</code></li>
+            <li><code>status</code> (ONLINE/OFFLINE 등)</li>
+          </ul>
+        </li>
+        <li><code>event</code>
+          <ul>
+            <li><code>id</code> (PK)</li>
+            <li><code>camera_id</code> (FK → cctv.id)</li>
+            <li><code>level</code> (INFO/WARNING/DANGER/CRITICAL 등)</li>
+            <li><code>detected_at</code> (감지 시각)</li>
+            <li><code>message</code></li>
+            <li><code>image_path</code> 또는 <code>image_url</code></li>
+            <li><code>created_at</code></li>
+          </ul>
+        </li>
+        <li><code>event_box</code> (선택)
+          <ul>
+            <li><code>id</code></li>
+            <li><code>event_id</code> (FK → event.id)</li>
+            <li><code>x1</code>, <code>y1</code>, <code>x2</code>, <code>y2</code></li>
+            <li><code>score</code>, <code>label</code></li>
+          </ul>
+        </li>
+        <li><code>user</code> (필요 시)</li>
+        <li><code>kakao_template</code> (선택)</li>
+      </ul>
+
+      <h3>3-5. 프론트엔드 (<code>frontend</code> + <code>nginx-gateway</code>)</h3>
+      <p><strong>사용 기술</strong></p>
+      <ul>
+        <li>Vue 3 (Composition API)</li>
+        <li>Axios (REST API 호출)</li>
+        <li>WebSocket (실시간 이벤트 수신)</li>
+        <li>차트 라이브러리 (예: Chart.js, ECharts)</li>
+      </ul>
+      <p><strong>주요 화면</strong></p>
+      <ul>
+        <li>메인 대시보드: 1~16번 CCTV 카드, 상태 요약, 실시간 알림 하이라이트</li>
+        <li>서브 대시보드: 그룹/카메라 상세 레이아웃</li>
+        <li>로그 &amp; 통계 탭: 필터 + 테이블 + 그래프</li>
+        <li>CCTV 관리 탭: 장비 목록/추가/수정/삭제, 메인 지정 등</li>
+        <li>마이페이지/설정: 카카오 연동, 알림 템플릿, 사용자 설정 등</li>
+      </ul>
+      <p><strong>Nginx 역할</strong></p>
+      <ul>
+        <li><code>/</code> → Vue 빌드된 정적파일 제공</li>
+        <li><code>/api</code> → <code>backend-api:8000</code> 프록시</li>
+        <li><code>/ws</code> → <code>backend-api:8000</code> WebSocket 프록시</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>3-3-6. Docker Compose 전체 그림 (요약 + 상세 설명)</h2>
+      <p>대략적인 구성은 다음과 같습니다.</p>
+      <ul>
+        <li><strong>services:</strong>
+          <ul>
+            <li><code>mysql-db</code></li>
+            <li><code>backend-api</code></li>
+            <li><code>ai-server</code></li>
+            <li><code>nginx-gateway</code></li>
+          </ul>
+        </li>
+        <li><strong>networks:</strong>
+          <ul>
+            <li><code>fire-net</code> — 모든 컨테이너가 참여하는 공통 네트워크</li>
+          </ul>
+        </li>
+        <li><strong>volumes:</strong>
+          <ul>
+            <li><code>mysql-data</code> — DB 데이터 저장용</li>
+            <li>추가로, 이벤트 이미지 저장용 볼륨(<code>event-images</code>) 등을 둘 수도 있음</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3-6-1. Docker Compose에서 각 서비스의 의미</h3>
+      <ul>
+        <li><strong><code>mysql-db</code></strong>
+          <ul>
+            <li>MySQL 8.x 공식 이미지를 사용하여 DB 컨테이너 생성</li>
+            <li><code>volumes</code>를 이용해 <code>/var/lib/mysql</code>을 호스트 볼륨(<code>mysql-data</code>)에 연결 → 컨테이너 재시작해도 데이터 유지</li>
+            <li>같은 네트워크(<code>fire-net</code>) 안에서는 <code>mysql-db:3306</code> 으로 접근 가능</li>
+          </ul>
+        </li>
+        <li><strong><code>backend-api</code></strong>
+          <ul>
+            <li>FastAPI 백엔드 애플리케이션이 동작하는 컨테이너</li>
+            <li><code>build.context</code>로 <code>./backend</code> 소스 폴더 기준으로 이미지 빌드</li>
+            <li><code>depends_on: [mysql-db]</code> 로 DB가 먼저 떠야 하는 의존성 표현</li>
+            <li><code>env_file</code> 또는 <code>environment</code>로 DB URL 등 환경변수를 전달</li>
+          </ul>
+        </li>
+        <li><strong><code>ai-server</code></strong>
+          <ul>
+            <li>YOLO + OpenCV 등 AI 추론 코드가 동작하는 컨테이너</li>
+            <li><code>backend-api</code>와 같은 네트워크에 있어서 <code>http://backend-api:8000</code> 으로 이벤트 전송</li>
+            <li>외부에서 직접 접근할 필요가 없으면 <code>ports</code>를 생략해도 됨</li>
+            <li>필요 시 이벤트 이미지 저장을 위해 <code>volumes</code>를 사용</li>
+          </ul>
+        </li>
+        <li><strong><code>nginx-gateway</code></strong>
+          <ul>
+            <li>Vue 빌드 결과를 Nginx로 서비스하는 컨테이너</li>
+            <li><code>ports: "8080:80"</code> 형태로 매핑하여, 브라우저에서 <code>http://localhost:8080</code>으로 접속</li>
+            <li>Nginx 설정에서 <code>/api</code>, <code>/ws</code> 요청은 <code>backend-api</code>로 프록시 → CORS 문제 줄이기</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>3-6-2. 예시 docker-compose.yml (설명용)</h3>
+      <p>아래는 이 구조를 반영한 <code>docker-compose.yml</code> 예시입니다. (실제 사용 시 폴더/포트는 프로젝트에 맞게 수정)</p>
+      <div class="code-block">
+version: "3.9"
+
+services:
+  mysql-db:
+    image: mysql:8.4
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_here
+      MYSQL_DATABASE: fire_system
+      MYSQL_USER: fire_user
+      MYSQL_PASSWORD: fire_user_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - fire-net
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-api
+    restart: always
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - mysql-db
+    ports:
+      - "8000:8000"
+    networks:
+      - fire-net
+
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    container_name: ai-server
+    restart: always
+    env_file:
+      - ./ai-server/.env
+    depends_on:
+      - backend-api
+    networks:
+      - fire-net
+
+  nginx-gateway:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.nginx
+    container_name: nginx-gateway
+    restart: always
+    depends_on:
+      - backend-api
+    ports:
+      - "8080:80"
+    networks:
+      - fire-net
+
+volumes:
+  mysql-data:
+
+networks:
+  fire-net:
+    driver: bridge
+      </div>
+
+      <h3>3-6-3. 명령어 관점에서의 사용 흐름</h3>
+      <ul>
+        <li><strong>처음 전체 환경을 띄울 때</strong>
+          <div class="code-block">
+# docker-compose.yml 이 있는 폴더에서
+docker compose up -d --build
+          </div>
+        </li>
+        <li><strong>이미지 변경 없고, 컨테이너만 다시 올릴 때</strong>
+          <div class="code-block">
+docker compose up -d
+          </div>
+        </li>
+        <li><strong>전체 중지할 때</strong>
+          <div class="code-block">
+docker compose down
+          </div>
+          <p>이 때, <code>volumes</code>로 분리한 <code>mysql-data</code>에 있는 DB 데이터는 그대로 유지됩니다.</p>
+        </li>
+      </ul>
+
+      <p>
+        이 정도 구성이면, <strong>“Docker Compose가 뭔지 잘 몰라도”</strong> 우리 프로젝트에서
+        <span class="highlight">AI / BE / DB / FE 전체를 한 번에 띄우고 중지하는 정도</span>는 충분히 다룰 수 있습니다.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>4. 데이터/이벤트 흐름(Flow) 요약</h2>
+      <ol>
+        <li><strong>실시간 감지</strong>
+          <ul>
+            <li>CCTV → RTSP 스트림 → AI 서버(OpenCV + YOLO)</li>
+            <li>AI 서버: 화재/연기 감지 → 이벤트 생성</li>
+          </ul>
+        </li>
+        <li><strong>이벤트 전달</strong>
+          <ul>
+            <li>AI 서버 → FastAPI 백엔드로 <code>POST /api/events</code></li>
+            <li>백엔드 → MySQL에 이벤트 로그 저장</li>
+          </ul>
+        </li>
+        <li><strong>알림</strong>
+          <ul>
+            <li>백엔드 → WebSocket으로 프론트에 “새 이벤트 발생” 메시지 전송</li>
+            <li>백엔드 → 카카오톡 알림 API 호출</li>
+          </ul>
+        </li>
+        <li><strong>프론트 표시</strong>
+          <ul>
+            <li>WebSocket 메시지 수신 → 메인 대시보드에서 해당 CCTV 카드 강조</li>
+            <li>알림 패널/팝업에 새 이벤트 내용 표시</li>
+            <li>클릭 시 해당 CCTV 확대 + 이벤트 상세 화면 이동</li>
+          </ul>
+        </li>
+        <li><strong>로그 &amp; 통계 조회</strong>
+          <ul>
+            <li>프론트 → <code>GET /api/events</code> 호출</li>
+            <li>백엔드 → DB 조회 후 JSON 반환</li>
+            <li>프론트 → 테이블/그래프 형태로 시각화</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>이벤트 처리 전체 플로우 정리</title>
+  <style>
+    /* 2-C 공통 스타일 시작 */
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 32px 16px;
+      color: #1f2937;
+      background-color: #e5e7eb;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e5e7eb;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.03em;
+      line-height: 1.3;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .page-header {
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .tagline {
+      font-size: 15px;
+      color: #4b5563;
+      margin: 0;
+    }
+
+    .section {
+      position: relative;
+      background: linear-gradient(to right, #ffffff, #fafafa);
+      padding: 16px 20px 16px 28px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 16px;
+      bottom: 16px;
+      width: 4px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+    }
+
+    ul {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .summary-box {
+      margin-top: 10px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border-left: 5px solid #818cf8;
+      background: linear-gradient(to right, #eef2ff, #f5f3ff);
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+      font-size: 15px;
+    }
+
+    pre {
+      background: #020617;
+      color: #e5e7eb;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-top: 12px;
+      margin-bottom: 12px;
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      border: 1px solid #111827;
+    }
+
+    code {
+      font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      background-color: #f3f4ff;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      margin-bottom: 18px;
+    }
+
+    table th, table td {
+      border: 1px solid #d1d5db;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    table th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 20px 16px 22px;
+        border-radius: 12px;
+      }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+    }
+
+    /* 2-C 공통 스타일 끝 */
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>이벤트 처리 전체 플로우 정리</h1>
+    </header>
+
+    <div class="section">
+      <h2>0. 이 장에서 다루는 범위</h2>
+      <p>
+        이 섹션은 <strong>“CCTV에서 화재가 실제로 감지되어 알림/로그/카카오 발송까지 가는 전체 과정”</strong>을 정리하는 챕터입니다.
+      </p>
+      <p>포함 범위:</p>
+      <ul>
+        <li>CCTV 실시간 영상 → AI 화재 감지</li>
+        <li>AI → BE 이벤트 전달</li>
+        <li>BE 비즈니스 로직(단계 판단, 중복·오경보 처리)</li>
+        <li>DB 저장(이벤트 로그, 이미지 경로, 카카오 이력 등)</li>
+        <li>FE UI 반영(WebSocket 실시간 알림)</li>
+        <li>카카오 알림 발송</li>
+        <li>이벤트 종료/해제 처리</li>
+        <li>장애/예외 상황 처리 흐름 요약</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>1. 기본 개념: “이벤트”란 무엇인가</h2>
+      <p>
+        시스템에서 말하는 <strong>이벤트(Event)</strong>는 다음과 같은 정보를 최소 단위로 가지는
+        <strong>“화재 관련 상태 변화 기록”</strong>입니다.
+      </p>
+      <ul>
+        <li><strong>어디서?</strong><br>
+          <code>cctv_id</code>, <code>cctv_name</code>, <code>group_id</code> 등 위치/카메라 식별자
+        </li>
+        <li><strong>언제?</strong><br>
+          <code>detected_at</code> (감지 시각), <code>resolved_at</code> (해제 시각)
+        </li>
+        <li><strong>무엇을?</strong><br>
+          <code>event_type</code> (FIRE_DETECTED, FIRE_CLEARED, TEST_ALARM 등)<br>
+          <code>level</code> (관심, 주의, 경고, 심각 등 단계)
+        </li>
+        <li><strong>어떤 근거로?</strong><br>
+          <code>confidence</code> (AI 모델 신뢰도)<br>
+          <code>image_path</code> (캡처 이미지 파일 경로 또는 URL)
+        </li>
+        <li><strong>알림/전송 상태</strong><br>
+          <code>kakao_sent</code> 여부, 전송 시각, 실패 시 사유 등
+        </li>
+        <li><strong>현재 상태</strong><br>
+          <code>status</code> (ACTIVE, RESOLVED, CANCELED 등)
+        </li>
+      </ul>
+      <p>
+        이 정보가 <strong>DB에 남는 단위</strong>이자, FE에서는 이걸 기반으로 <strong>표/그래프/알림</strong>을 표시합니다.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>2. 정상 화재 감지 플로우 (HAPPY PATH)</h2>
+
+      <h3>2-1. CCTV → AI 서버: 실시간 영상 입력</h3>
+      <ol>
+        <li>
+          <strong>CCTV / NVR</strong>에서 <strong>RTSP 스트림</strong>을 제공<br>
+          예: <code>rtsp://nvr.local/live/cam01</code>
+        </li>
+        <li>
+          <strong>AI 컨테이너</strong>(화재 감지 서버)가 해당 스트림을 <strong>Pull 방식</strong>으로 지속적으로 읽기<br>
+          OpenCV / GStreamer 등으로 프레임 단위 읽기<br>
+          프레임 간격(예: 1초마다, 초당 N프레임 등)은 성능/정확도에 따라 팀에서 설정
+        </li>
+        <li>
+          AI 서버는 각 CCTV 별로 다음 상태를 유지
+          <ul>
+            <li>현재 프레임 번호 / 타임스탬프</li>
+            <li>마지막 감지 결과(화재 여부, 신뢰도)</li>
+            <li>내부 버퍼(최근 N초간 결과)</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-2. AI 내부: 화재 감지 모델 추론</h3>
+      <ol>
+        <li>각 프레임에 대해 <strong>화재 감지 모델(YOLO 등)</strong> 수행</li>
+        <li>
+          모델 출력:
+          <ul>
+            <li>화재로 판단되는 영역(박스/마스크)</li>
+            <li>클래스(불꽃/연기 등)</li>
+            <li>신뢰도 점수(confidence)</li>
+          </ul>
+        </li>
+        <li>
+          AI 서버의 기본 판단 로직(설계안):
+          <ul>
+            <li><strong>confidence ≥ 설정값(예: 0.7)</strong> 이상인 화재 박스가 일정 횟수 이상 연속 등장하면 → “화재 감지 이벤트 발생 후보”로 인정</li>
+            <li>한두 프레임만 잠깐 찍힌 경우는 <strong>노이즈로 무시</strong></li>
+          </ul>
+        </li>
+        <li>
+          감지되었다고 판단되면, AI 서버는 <strong>다음 정보를 정리</strong>:
+          <ul>
+            <li><code>camera_id</code></li>
+            <li><code>detected_at</code></li>
+            <li><code>confidence</code></li>
+            <li>캡처 이미지(혹은 썸네일) 저장 후, <code>image_path</code> 확보</li>
+            <li>필요 시 연기/불꽃 구분, 영역 좌표 등</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-3. AI → BE: 이벤트 전송</h3>
+      <ol>
+        <li>
+          AI 서버는 BE에 <strong>내부용 API 호출</strong> (예시 설계)<br>
+          <code>POST /internal/events/fire</code>
+          <pre>{
+  "camera_id": "CCTV-001",
+  "group_id": "GRP-01",
+  "detected_at": "2025-12-11T10:23:45+09:00",
+  "confidence": 0.87,
+  "image_path": "/events/2025-12-11/CCTV-001_102345.jpg",
+  "raw_boxes": [
+    { "x": 100, "y": 120, "w": 60, "h": 80, "class": "fire", "score": 0.87 }
+  ]
+}</pre>
+        </li>
+        <li>
+          BE는 이 API를 받고 <strong>해당 카메라의 현재 상태를 조회</strong>:
+          <ul>
+            <li>이미 진행 중인 화재 이벤트가 있는지? (ACTIVE 이벤트 여부)</li>
+            <li>최근 n분 내에 같은 카메라에서 동일 이벤트가 있었는지? (중복 방지)</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-4. BE 비즈니스 로직: 단계/중복/에스컬레이션 판단</h3>
+      <p>기본 흐름 (설계안):</p>
+      <ol>
+        <li>
+          <strong>기존 활성 이벤트 여부 확인</strong>
+          <ul>
+            <li>없으면 → 새 이벤트 생성</li>
+            <li>있으면 → 이벤트 강화/연장만 하고 새로 만들지 않음</li>
+          </ul>
+        </li>
+        <li>
+          <strong>단계(level) 산정</strong>
+          <ul>
+            <li>단순 감지 → <code>LEVEL_1</code> (관심/주의)</li>
+            <li>일정 시간 지속 + 신뢰도↑ → <code>LEVEL_2</code> (경고)</li>
+            <li>추가 조건(연속 감지 시간, 열원 크기 등) 만족 시 → <code>LEVEL_3</code> (심각)</li>
+          </ul>
+        </li>
+        <li>
+          <strong>단계별 처리 정책 예시:</strong>
+          <ul>
+            <li>
+              <strong>LEVEL_1</strong>
+              <ul>
+                <li>DB에 이벤트 생성 (ACTIVE)</li>
+                <li>FE에 WebSocket으로 “주의 수준 알림” 송신</li>
+                <li>카카오는 아직 발송 안 할 수도 있음 (설정에 따라)</li>
+              </ul>
+            </li>
+            <li>
+              <strong>LEVEL_2</strong>
+              <ul>
+                <li>이벤트 레벨 업데이트</li>
+                <li>FE에 더 강한 시각적 알림, 팝업</li>
+                <li>카카오 알림 1차 발송</li>
+              </ul>
+            </li>
+            <li>
+              <strong>LEVEL_3</strong>
+              <ul>
+                <li>최종 경보 단계</li>
+                <li>카카오 알림 2차 또는 별도 템플릿 발송</li>
+                <li>필요 시 다른 시스템 연계(소방 연동 등)도 고려 가능</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>
+          각 단계 변경 시 BE는:
+          <ul>
+            <li>이벤트 로그 테이블에 INSERT/UPDATE</li>
+            <li>WebSocket → FE에 <code>event_update</code> 메시지 발행</li>
+            <li>카카오 발송 조건이 맞으면 발송 요청 큐에 넣기</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-5. DB: 이벤트 로그 및 관련 데이터 저장</h3>
+      <ol>
+        <li>
+          <strong>이벤트 로그 테이블 예 (요약 구조)</strong>
+          <ul>
+            <li><code>id</code> (PK)</li>
+            <li><code>camera_id</code>, <code>group_id</code></li>
+            <li><code>event_type</code> (FIRE)</li>
+            <li><code>level</code> (1/2/3 등)</li>
+            <li><code>status</code> (ACTIVE/RESOLVED/CANCELED)</li>
+            <li><code>detected_at</code>, <code>resolved_at</code></li>
+            <li><code>image_path</code></li>
+            <li><code>first_kakao_sent_at</code>, <code>last_kakao_sent_at</code></li>
+            <li><code>created_at</code>, <code>updated_at</code></li>
+          </ul>
+        </li>
+        <li>
+          <strong>이미지 저장 방식 (설계안)</strong>
+          <ul>
+            <li>실제 파일은 NAS/스토리지에 저장</li>
+            <li>DB에는 <code>image_path</code> 또는 <code>image_url</code>만 저장</li>
+          </ul>
+        </li>
+        <li>
+          BE는 트랜잭션 단위로:
+          <ul>
+            <li>이벤트 INSERT/UPDATE</li>
+            <li>별도 <code>kakao_log</code> 테이블에 전송 이력 기록 가능</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-6. 실시간 알림: WebSocket → FE</h3>
+      <ol>
+        <li>
+          BE는 이벤트 생성/상태 변경 시마다 WebSocket 메시지 발행:
+          <pre>{
+  "type": "fire_event",
+  "action": "created",     // or updated, resolved
+  "event_id": 123,
+  "camera_id": "CCTV-001",
+  "level": 2,
+  "status": "ACTIVE",
+  "detected_at": "...",
+  "image_url": "...",
+  "message": "[2단계] 화재 감지 - 1층 로비"
+}</pre>
+        </li>
+        <li>
+          FE(메인 대시보드 / 서브 대시보드)는 이 메시지를 받아:
+          <ul>
+            <li>해당 카메라 카드의 상태 색깔 변경 (초록 → 노랑/빨강)</li>
+            <li>점멸/애니메이션 효과</li>
+            <li>우상단 긴급 알림 배너/팝업 표시</li>
+            <li>필요 시 사운드 재생</li>
+          </ul>
+        </li>
+        <li>
+          <strong>로그 &amp; 통계 탭</strong>은 WebSocket 또는 주기적 API 요청으로:
+          <ul>
+            <li>“방금 발생한 이벤트”를 즉시 리스트에 반영</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>2-7. 카카오 알림 발송</h3>
+      <ol>
+        <li>BE의 카카오 알림 로직은 <strong>기존 챕터(카카오 템플릿 설계)</strong>에서 정의한 정책을 따른다.</li>
+        <li>
+          이벤트 레벨이 조건을 만족하면:
+          <ul>
+            <li>발송용 Payload 구성</li>
+            <li>카카오 발송 API/서드파티 모듈 호출</li>
+          </ul>
+        </li>
+        <li>
+          응답에 따라:
+          <ul>
+            <li>성공 → <code>kakao_sent = true</code>, <code>kakao_sent_at</code> 기록</li>
+            <li>실패 → <code>kakao_sent = false</code>, <code>kakao_error_code</code> 저장</li>
+          </ul>
+        </li>
+        <li>FE에서는 알림 상세창에서:
+          <ul>
+            <li>“카카오 발송 성공/실패” 여부를 조회할 수 있게 API 제공 가능</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>3. 이벤트 해제(Resolved) 플로우</h2>
+      <p>화재가 더 이상 감지되지 않는 상황에 대한 흐름입니다.</p>
+
+      <h3>3-1. AI 측 감지 소멸</h3>
+      <ol>
+        <li>일정 시간 동안(예: 10~20초 이상), 연속해서 <strong>화재 미검출</strong> 상태가 유지되면</li>
+        <li>AI 서버는 “해당 카메라의 화재 상태가 종료된 것 같다”고 판단</li>
+        <li>
+          그 시점에 AI는 BE에 다음과 같은 요청 전송(설계안):
+          <br><code>POST /internal/events/fire/clear</code>
+          <pre>{
+  "camera_id": "CCTV-001",
+  "cleared_at": "2025-12-11T10:25:30+09:00"
+}</pre>
+        </li>
+      </ol>
+
+      <h3>3-2. BE에서 이벤트 종료 처리</h3>
+      <ol>
+        <li>해당 카메라의 <strong>ACTIVE 상태 이벤트</strong> 조회</li>
+        <li>
+          있다면:
+          <ul>
+            <li><code>status = RESOLVED</code></li>
+            <li><code>resolved_at = cleared_at</code></li>
+          </ul>
+        </li>
+        <li>
+          이벤트 전체 지속 시간 계산 (통계용)
+          <ul>
+            <li><code>duration_sec = resolved_at - detected_at</code></li>
+          </ul>
+        </li>
+        <li>DB에 UPDATE 커밋</li>
+      </ol>
+
+      <h3>3-3. FE / 카카오 후처리</h3>
+      <ol>
+        <li>
+          BE → WebSocket으로 <code>action: "resolved"</code> 메시지 발행
+          <ul>
+            <li>FE는 대시보드 카드 색상을 정상 상태로 복귀</li>
+            <li>알림 리스트에서 “해결됨” 표시</li>
+          </ul>
+        </li>
+        <li>
+          카카오는 일반적으로 “해제 알림”까지는 선택 사항
+          <ul>
+            <li>필요 시, “화재 위험 해제” 템플릿을 별도로 발송하도록 정책 설정 가능</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>4. 오탐/테스트/수동 조작 플로우</h2>
+
+      <h3>4-1. 오탐(오경보) 처리</h3>
+      <ol>
+        <li>사용자가 대시보드에서 해당 이벤트를 선택</li>
+        <li>“오탐 처리” 버튼 클릭 시:
+          <ul>
+            <li>BE에 <code>PATCH /events/{id}/cancel</code> 같은 API 호출</li>
+          </ul>
+        </li>
+        <li>
+          BE는:
+          <ul>
+            <li><code>status = CANCELED</code></li>
+            <li><code>cancel_reason = USER_MARKED_AS_FALSE_ALARM</code></li>
+          </ul>
+        </li>
+        <li>FE에서는:
+          <ul>
+            <li>이벤트 리스트에 “오탐 처리됨” 표시</li>
+          </ul>
+        </li>
+        <li>
+          통계에는 “발생했지만 오탐으로 처리된 이벤트”로 분리해서 사용 가능
+        </li>
+      </ol>
+
+      <h3>4-2. 테스트 알림</h3>
+      <ol>
+        <li>관리자 메뉴에서 “테스트 알림 발생” 기능 제공 가능</li>
+        <li>
+          AI 없이, BE가 직접 테스트 이벤트 생성:
+          <ul>
+            <li><code>event_type = TEST_FIRE</code></li>
+          </ul>
+        </li>
+        <li>
+          UI, 카카오, 로깅 전체 라인이 정상 동작하는지 점검
+        </li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>5. 장애/예외 상황 플로우 (요약)</h2>
+
+      <h3>5-1. AI 서버 장애</h3>
+      <ul>
+        <li>
+          <strong>현상</strong><br>
+          AI 컨테이너 다운, RTSP 연결 끊김
+        </li>
+        <li>
+          <strong>처리</strong>
+          <ul>
+            <li>AI 헬스 체크 실패 → BE에 “AI 상태 비정상” 이벤트 보고(또는 자체 로그)</li>
+            <li>FE 대시보드에 해당 카메라 카드에 “AI OFFLINE” 배지 표시</li>
+            <li>운영자에게 별도의 시스템 알림(선택)</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>5-2. DB 장애</h3>
+      <ul>
+        <li>
+          BE에서 DB INSERT/UPDATE 실패 시:
+          <ul>
+            <li>이벤트는 메모리/임시 큐에 저장 시도</li>
+            <li>재시도 로직 또는 운영 알림</li>
+            <li>최악의 경우 “실시간 알림은 갔지만 로그는 일부 누락”될 수 있음 → 이 점을 운영 문서에 명시</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>5-3. 카카오 실패</h3>
+      <ul>
+        <li>
+          카카오 API 호출 실패 시:
+          <ul>
+            <li>재시도 정책(예: 3회까지 재전송, N분 간격) 설정 가능</li>
+            <li>최종 실패 시 <code>kakao_sent = false</code>, 에러코드 저장</li>
+            <li>FE에서 해당 이벤트 상세 화면에 “카카오 전송 실패” 표시</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h3>5-4. WebSocket 끊김</h3>
+      <ul>
+        <li>
+          FE에서 WebSocket 연결이 끊기면:
+          <ul>
+            <li>UI 상단에 “실시간 연결 끊김” 배너 표시</li>
+            <li>일정 주기로 재연결 시도</li>
+            <li>그동안 발생한 이벤트는 FE가 API로 백필(Backfill)해서 가져오는 구조 설계 가능</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>6. 한 번에 보는 요약 플로우</h2>
+      <p><strong>정상 화재 감지 기준 메인 시나리오:</strong></p>
+      <ol>
+        <li>CCTV → RTSP 스트림 제공</li>
+        <li>AI 서버가 스트림 수신 → 프레임 단위 분석</li>
+        <li>화재 패턴 일정 시간 이상 감지 → AI가 BE에 “화재 감지 이벤트” 전송</li>
+        <li>BE가 현재 상태/중복 여부 확인 → 이벤트 생성 및 단계(level) 결정</li>
+        <li>DB에 이벤트 기록 (로그 + 이미지 경로 + 카카오 상태 등)</li>
+        <li>WebSocket으로 FE에 실시간 알림 송신</li>
+        <li>FE 대시보드/로그 탭에서 즉시 반영 (카드 색상, 팝업, 리스트 갱신)</li>
+        <li>일정 단계 이상이면 카카오 알림 발송</li>
+        <li>화재가 더 이상 감지되지 않으면 → AI가 BE에 종료 이벤트 전송</li>
+        <li>BE가 이벤트 상태를 RESOLVED로 업데이트 → FE UI 갱신, 통계에 반영</li>
+      </ol>
+    </div>
+
+  </div>
+</body>
+</html>
