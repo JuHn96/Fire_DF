@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Docker Compose 전체 설명</title>
+    <style>
+        /* 2-C Violet Gradient 문서 템플릿 공통 스타일 */
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            padding: 32px 16px;
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 28px 32px 32px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+            border: 1px solid #e5e7eb;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+            color: #111827;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 800;
+            margin: 0 0 14px 0;
+            letter-spacing: -0.03em;
+            line-height: 1.3;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 14px;
+            margin-bottom: 8px;
+        }
+
+        .page-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 14px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            position: relative;
+            background: linear-gradient(to right, #ffffff, #fafafa);
+            padding: 16px 20px 18px 28px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .section::before {
+            content: "";
+            position: absolute;
+            left: 10px;
+            top: 16px;
+            bottom: 16px;
+            width: 4px;
+            border-radius: 999px;
+            background: linear-gradient(to bottom, #ede9fe, #c4b5fd, #818cf8);
+        }
+
+        p {
+            margin-top: 4px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        ul,
+        ol {
+            margin-top: 6px;
+            margin-bottom: 6px;
+            padding-left: 20px;
+            font-size: 14px;
+        }
+
+        li {
+            margin-bottom: 4px;
+        }
+
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            background-color: #f3f4ff;
+            padding: 2px 5px;
+            border-radius: 4px;
+            border: 1px solid #e5e7eb;
+        }
+
+        pre {
+            margin: 10px 0 12px;
+            padding: 12px 14px;
+            background-color: #020617;
+            color: #e5e7eb;
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            border: 1px solid #111827;
+        }
+
+        pre code {
+            font-family: inherit;
+            white-space: pre;
+            background: none;
+            padding: 0;
+            border: none;
+        }
+
+        @media (max-width: 640px) {
+            .page {
+                padding: 20px 16px 22px;
+                border-radius: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 19px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <header class="page-header">
+            <h1>Docker Compose 전체 설명</h1>
+        </header>
+
+        <!-- 1. 이 docker-compose가 하는 일 (전체 개념) -->
+        <div class="section">
+            <h2>1. 이 docker-compose가 하는 일 (전체 개념)</h2>
+            <p>이 docker-compose.yml은 “한 번에 전체 시스템을 띄우는 스위치” 역할을 합니다.</p>
+            <p>구성은 이렇게 잡을게요:</p>
+            <ul>
+                <li>db → MySQL 데이터베이스</li>
+                <li>backend → FastAPI 기반 BE (REST + WebSocket까지 포함)</li>
+                <li>ai-server → RTSP 받아서 화재 감지 후, backend에 이벤트 보내는 AI 컨테이너</li>
+                <li>frontend → Vue 빌드 결과 + Nginx (정적 파일 + 리버스 프록시)</li>
+            </ul>
+            <p>데이터 흐름은 그대로입니다:</p>
+            <p>
+                CCTV(RTSP) → ai-server → backend → db / WebSocket → frontend(대시보드) → 사용자<br />
+                그리고 backend → 카카오 API
+            </p>
+        </div>
+
+        <!-- 2. docker-compose.yml 전체 코드 -->
+        <div class="section">
+            <h2>2. docker-compose.yml 전체 코드</h2>
+            <p>프로젝트 루트에 docker-compose.yml파일로 저장하는 기준 코드입니다.</p>
+            <pre><code>version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: fire-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"      # 호스트 3307 → 컨테이너 3306 (원하면 바꿔도 됨)
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fire_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fire-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"      # 개발용: 직접 호출하고 싶을 때 사용 (운영에선 Nginx만 열어도 됨)
+    networks:
+      - fire_net
+
+  ai-server:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: fire-ai
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - fire_net
+    # 필요하면 GPU/RTSP 관련 옵션 추가 (예: device, extra_hosts 등)
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fire-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"        # 브라우저에서 http://localhost:8080 으로 접속
+    networks:
+      - fire_net
+
+volumes:
+  mysql_data:
+
+networks:
+  fire_net:
+    driver: bridge</code></pre>
+
+            <p>이게 “기본형”입니다.<br />
+                이제 이 코드가 왜 이렇게 생겼는지 / 어떤 순서로 돌아가는지 설명해볼게요.</p>
+        </div>
+
+        <!-- 3. 서비스별 설명 (원리 + 역할) -->
+        <div class="section">
+            <h2>3. 서비스별 설명 (원리 + 역할)</h2>
+
+            <h3>3-1. db 서비스 – MySQL 컨테이너</h3>
+            <pre><code>db:
+  image: mysql:8.0
+  container_name: fire-db
+  restart: unless-stopped
+  environment:
+    MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    MYSQL_DATABASE: ${MYSQL_DATABASE}
+    MYSQL_USER: ${MYSQL_USER}
+    MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+  ports:
+    - "3307:3306"
+  volumes:
+    - mysql_data:/var/lib/mysql
+  networks:
+    - fire_net</code></pre>
+
+            <p>역할</p>
+            <ul>
+                <li>프로젝트 전체의 공통 데이터 저장소</li>
+                <li>CCTV 정보</li>
+                <li>이벤트 로그</li>
+                <li>카카오 발송 이력</li>
+                <li>템플릿 설정 등</li>
+            </ul>
+
+            <p>중요 포인트</p>
+            <ul>
+                <li>environment<br />
+                    .env 파일에 있는 값들을 가져옵니다.</li>
+            </ul>
+            <ul>
+                <li>MYSQL_ROOT_PASSWORD</li>
+                <li>MYSQL_DATABASE</li>
+                <li>MYSQL_USER</li>
+                <li>MYSQL_PASSWORD</li>
+            </ul>
+            <ul>
+                <li>ports: "3307:3306"<br />
+                    컨테이너 내부 MySQL 포트는 항상 3306<br />
+                    호스트에서 3307로 접속 → WSL이나 Windows에서 워크벤치로 붙을 때 localhost:3307</li>
+                <li>volumes: mysql_data:/var/lib/mysql<br />
+                    컨테이너 삭제해도 데이터는 mysql_data 볼륨에 살아있음</li>
+            </ul>
+
+            <h3>3-2. backend 서비스 – FastAPI 서버</h3>
+            <pre><code>backend:
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  container_name: fire-backend
+  restart: unless-stopped
+  env_file:
+    - .env
+  depends_on:
+    - db
+  ports:
+    - "8000:8000"
+  networks:
+    - fire_net</code></pre>
+
+            <p>역할</p>
+            <ul>
+                <li>AI가 보낸 화재 이벤트 수신 (POST /internal/events/fire)</li>
+                <li>이벤트 단계/상태 계산 (관심/주의/경고 등)</li>
+                <li>DB에 이벤트 로그 INSERT/UPDATE</li>
+                <li>WebSocket으로 FE에 실시간 푸시(ws://.../ws)</li>
+                <li>카카오 알림 모듈 호출</li>
+            </ul>
+
+            <p>중요 포인트</p>
+            <ul>
+                <li>build.context: ./backend<br />
+                    ./backend/Dockerfile 기준으로 이미지를 빌드</li>
+                <li>env_file: .env<br />
+                    백엔드에서 쓸 DB 접속 정보, 카카오 키, CORS 설정 등 한 번에 로드</li>
+                <li>depends_on: db<br />
+                    docker-compose가 db를 먼저 띄우고, 그 다음에 backend를 띄우도록 순서 지정</li>
+                <li>ports: "8000:8000"<br />
+                    개발하면서 직접 FastAPI를 보고 싶다면 브라우저에서 localhost:8000/docs 확인 가능<br />
+                    운영에서는 8000을 굳이 외부로 안 열고, frontend(Nginx)만 포트 노출하는 구조로 바꿔도 됨</li>
+            </ul>
+
+            <h3>3-3. ai-server – 화재 감지 AI 서버</h3>
+            <pre><code>ai-server:
+  build:
+    context: ./ai
+    dockerfile: Dockerfile
+  container_name: fire-ai
+  restart: unless-stopped
+  env_file:
+    - .env
+  depends_on:
+    - backend
+  networks:
+    - fire_net</code></pre>
+
+            <p>역할</p>
+            <ul>
+                <li>RTSP로 CCTV 영상을 받아옴 (예: rtsp://...)</li>
+                <li>프레임마다 모델 추론 → 화재 여부 판단</li>
+                <li>조건 만족 시 backend에 이벤트 전송<br />
+                    (POST http://fire-backend:8000/internal/events/fire 같은 식)</li>
+            </ul>
+
+            <p>중요 포인트</p>
+            <ul>
+                <li>depends_on: backend<br />
+                    백엔드가 살아있어야 이벤트를 보낼 수 있으니까, backend 먼저 띄우고 그 뒤에 AI 컨테이너 시작</li>
+            </ul>
+            <ul>
+                <li>.env에서 가져올 수 있는 값 예:</li>
+            </ul>
+            <ul>
+                <li>AI_RTSP_LIST : 카메라 목록</li>
+                <li>BACKEND_API_URL : 예) http://backend:8000</li>
+            </ul>
+            <ul>
+                <li>GPU 쓸 거면 나중에 여기에 deploy.resources나 devices 옵션 추가하면 됨 (지금은 개념용이라 생략)</li>
+            </ul>
+
+            <h3>3-4. frontend – Vue + Nginx</h3>
+            <pre><code>frontend:
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  container_name: fire-frontend
+  restart: unless-stopped
+  depends_on:
+    - backend
+  ports:
+    - "8080:80"
+  networks:
+    - fire_net</code></pre>
+
+            <p>역할</p>
+            <ul>
+                <li>빌드된 Vue 앱을 정적 파일로 서비스</li>
+                <li>Nginx가 /api, /ws를 backend로 프록시</li>
+                <li>유저는 http://localhost:8080 하나만 접속해서</li>
+                <li>대시보드</li>
+                <li>로그/통계</li>
+                <li>CCTV 관리</li>
+                <li>마이페이지<br />전부 접근</li>
+            </ul>
+
+            <p>중요 포인트</p>
+            <ul>
+                <li>depends_on: backend<br />
+                    백엔드가 없으면 화면에서 API 호출하다 에러만 남 → 최소 기동 순서 맞추기</li>
+                <li>ports: "8080:80"<br />
+                    호스트 8080 → 컨테이너 Nginx 80<br />
+                    브라우저 주소는 http://localhost:8080</li>
+            </ul>
+        </div>
+
+        <!-- 4. 네트워크와 볼륨 -->
+        <div class="section">
+            <h2>4. 네트워크와 볼륨 (fire_net, mysql_data)</h2>
+            <pre><code>volumes:
+  mysql_data:
+
+networks:
+  fire_net:
+    driver: bridge</code></pre>
+
+            <h3>4-1. fire_net 네트워크</h3>
+            <p>모든 컨테이너는 같은 fire_net에 물려있음</p>
+            <p>컨테이너끼리는 서비스 이름으로 통신:</p>
+            <p>backend → db:3306<br />
+                ai-server → backend:8000<br />
+                frontend(Nginx) → backend:8000</p>
+            <p>이 구조 덕분에 IP를 코드에 하드코딩할 필요가 없음</p>
+
+            <h3>4-2. mysql_data 볼륨</h3>
+            <p>MySQL 실제 데이터 파일 저장</p>
+            <p>컨테이너 삭제/재배포해도 데이터 유지</p>
+            <p>“DB 날아갔다”를 막는 최소 장치</p>
+        </div>
+
+        <!-- 5. 실제 동작 순서 -->
+        <div class="section">
+            <h2>5. 실제 동작 순서 (compose 기준 시퀀스)</h2>
+
+            <p>1) 코드/폴더 준비</p>
+            <p>프로젝트 루트 예시:</p>
+            <pre><code>project-root/
+ ├─ backend/
+ │    └─ Dockerfile
+ ├─ ai/
+ │    └─ Dockerfile
+ ├─ frontend/
+ │    └─ Dockerfile
+ ├─ docker-compose.yml
+ └─ .env</code></pre>
+
+            <p>2) .env 작성 (간단 예시)</p>
+            <pre><code># MySQL
+MYSQL_ROOT_PASSWORD=your_root_pw
+MYSQL_DATABASE=fire_project
+MYSQL_USER=fire_user
+MYSQL_PASSWORD=your_user_pw
+
+# Backend
+BACKEND_LOG_LEVEL=info
+BACKEND_ALLOWED_ORIGINS=http://localhost:8080
+
+# Kakao (예시)
+KAKAO_API_KEY=xxx
+KAKAO_SENDER_KEY=yyy
+KAKAO_TEMPLATE_ID_FIRE_LEVEL2=zzz
+
+# AI
+BACKEND_API_URL=http://backend:8000
+AI_RTSP_LIST=rtsp://...,rtsp://...</code></pre>
+
+            <p>3) 컨테이너 빌드 + 기동</p>
+            <pre><code>docker compose up -d --build</code></pre>
+
+            <p>내부적으로 일어나는 일 순서</p>
+            <ul>
+                <li>이미지 없으면 backend, ai, frontend 빌드</li>
+                <li>db 컨테이너 생성 및 기동</li>
+                <li>backend 컨테이너가 기동 → DB 연결 시도</li>
+                <li>ai-server 컨테이너가 기동 → RTSP 연결, backend로 이벤트 보낼 준비</li>
+                <li>frontend 컨테이너가 기동 → Vue 정적 파일 서비스 + 프록시 세팅 완료</li>
+                <li>최종적으로 사용자: http://localhost:8080 접속</li>
+            </ul>
+
+            <p>4) 로그 확인</p>
+            <pre><code>docker compose logs -f backend
+docker compose logs -f ai-server
+docker compose logs -f db
+docker compose logs -f frontend</code></pre>
+
+            <p>5) 종료</p>
+            <pre><code>docker compose down</code></pre>
+
+            <p>데이터는 mysql_data 볼륨에 남아있고, 다시 up 하면 이어서 사용 가능.</p>
+        </div>
+
+        <!-- 6. 정리 -->
+        <div class="section">
+            <h2>6. 정리</h2>
+            <p>이 docker-compose.yml 하나로:</p>
+            <ul>
+                <li>DB, 백엔드, AI, 프론트엔드까지 전부 컨테이너 구성</li>
+                <li>서로의 통신은 fire_net 네트워크 + 서비스 이름으로 해결</li>
+                <li>실행은 docker compose up -d --build 한 줄</li>
+            </ul>
+            <p>나중에:</p>
+            <ul>
+                <li>포트 정리(운영에선 8080만 열고 8000/3307은 내부용)</li>
+                <li>GPU 옵션 추가</li>
+                <li>로그/헬스체크 추가<br />
+                    이런 것만 덧붙이면 바로 “발표용 + 시연용” 구조로 갈 수 있습니다.</li>
+            </ul>
+        </div>
+
+        <!-- SECTION 7 -->
+        <div class="section">
+            <h2>7. Docker 컨테이너들끼리 연결·묶이는 원리와 방법</h2>
+
+            <h3>1) fire_net 네트워크로 같은 “가상 스위치”에 묶는다</h3>
+            <p>docker-compose.yml 맨 아래에 정의한 다음 부분이 핵심입니다.</p>
+
+            <pre><code>networks:
+  fire_net:
+    driver: bridge</code></pre>
+
+            <ul>
+                <li><strong>bridge</strong> 드라이버는 도커가 만드는 가상 스위치 역할입니다.</li>
+                <li>모든 서비스에 <code>networks: - fire_net</code> 를 지정하면, 전부 이 스위치에 꽂힌 상태가 됩니다.</li>
+                <li>같은 네트워크 안에서는 서로를 서비스 이름으로 찾을 수 있습니다.</li>
+            </ul>
+
+            <h3>2) 서비스 이름이 곧 “호스트 이름(DNS 이름)”이 된다</h3>
+            <p>예를 들어, backend에서 DB에 접속할 때는 이렇게 씁니다.</p>
+
+            <pre><code>DB_HOST = "db"
+DB_PORT = 3306</code></pre>
+
+            <p>혹은 AI 서버에서 백엔드로 요청 보낼 때:</p>
+
+            <pre><code>BACKEND_API_URL = "http://backend:8000"</code></pre>
+
+            <ul>
+                <li><code>db</code>, <code>backend</code> 는 도커 네트워크 내부 DNS 이름입니다.</li>
+                <li>컨테이너들은 이 이름으로 서로를 찾고, 실제 IP는 도커가 내부적으로 매핑합니다.</li>
+                <li>그래서 IP를 직접 적을 필요가 없고, 재시작으로 IP가 바뀌어도 문제 없이 동작합니다.</li>
+            </ul>
+
+            <h3>3) depends_on 으로 “기동 순서”를 맞춘다</h3>
+            <p>각 서비스에 있는 <code>depends_on</code> 설정은...</p>
+
+            <pre><code>backend depends_on db
+ai-server depends_on backend
+frontend depends_on backend</code></pre>
+
+            <ul>
+                <li>먼저 <code>db</code>가 올라오고, 그 다음 <code>backend</code>, 그 다음 <code>ai-server</code>, 마지막으로
+                    <code>frontend</code> 가 올라옵니다.</li>
+                <li>이렇게 하지 않으면, AI가 먼저 떠서 아직 준비 안 된 backend에 요청을 보내다가 에러가 날 수 있습니다.</li>
+            </ul>
+
+            <h3>4) 내부 통신에는 내부 포트만, 외부 공개는 필요한 포트만</h3>
+
+            <pre><code>backend 내부 포트: 8000
+db 내부 포트: 3306</code></pre>
+
+            <p>외부(브라우저, 워크벤치 등)에서 접근해야 하는 경우에만 <code>ports</code>로 매핑합니다.</p>
+
+            <pre><code>db: "3307:3306"
+frontend: "8080:80"</code></pre>
+
+            <ul>
+                <li>운영 환경에서는 frontend(8080 또는 80/443)만 열고 DB/BE 포트는 외부로 안 열어도 됩니다.</li>
+            </ul>
+
+            <h3>5) 컨테이너가 죽어도 전체 구조는 유지된다</h3>
+            <ul>
+                <li>각 서비스는 <code>restart: unless-stopped</code> 덕분에 자동 재시작됩니다.</li>
+                <li>DB 데이터는 <code>mysql_data</code> 볼륨에 저장되어 컨테이너 삭제 후에도 그대로 남습니다.</li>
+                <li>네트워크는 fire_net 하나로 묶여 있어서, 재시작해도 서비스 이름은 변하지 않습니다.</li>
+            </ul>
+
+            <p>결과적으로, 이 docker-compose 구성은:</p>
+
+            <ul>
+                <li>같은 네트워크(fire_net)로 컨테이너들을 한 묶음으로 만들고,</li>
+                <li>서비스 이름으로 서로를 찾게 하고,</li>
+                <li>depends_on으로 실행 순서를 맞추고,</li>
+                <li>볼륨으로 데이터는 따로 안전하게 보존하는 구조입니다.</li>
+            </ul>
+
+        </div>
+    </div>
+</body>
+
+</html>
